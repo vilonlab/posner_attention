@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2024.2.1post4),
-    on September 26, 2024, at 10:03
+    on October 11, 2024, at 15:41
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -126,7 +126,7 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version='',
         extraInfo=expInfo, runtimeInfo=None,
-        originPath='C:\\Users\\reidb\\PsychoPy\\Psychophysics Experiments\\Invalid Condition Stim Left\\20_9_2024_Final Psychophysics Experiment_lastrun.py',
+        originPath='C:\\Users\\reidb\\Documents\\GitHub\\posner_attention\\PsychoPy\\Psychophysics Experiments\\PsychoPhysics Experiment\\20_9_2024_Final Psychophysics Experiment_lastrun.py',
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
