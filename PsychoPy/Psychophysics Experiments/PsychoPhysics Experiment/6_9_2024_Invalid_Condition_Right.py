@@ -40,6 +40,7 @@ try:
 except ImportError:
     print("questplus is not installed.")
 
+### End TDW Added 10/11/2024
 
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
@@ -805,6 +806,23 @@ def quit(thisExp, win=None, thisSession=None):
     # terminate Python process
     core.quit()
 
+### Reid Added 10/11/2024
+# Define the stimulus space
+stimulus_space = np.linspace(0, 1, 100)  # Example stimulus space
+
+# Define the psychometric function
+def psychometric_function(stimulus, threshold, slope):
+    return 1 / (1 + np.exp(-(stimulus - threshold) / slope))
+
+# Define the prior distributions for the parameters
+priors = {
+    'threshold': questplus.Prior('uniform', lower=0, upper=1),
+    'slope': questplus.Prior('uniform', lower=0.1, upper=10)
+}
+
+# Create the QUEST+ object
+quest = questplus.QuestPlus(stimulus_space, psychometric_function, priors)
+### End Reid added 10/11/2024
 
 # if running this experiment as a script...
 if __name__ == '__main__':

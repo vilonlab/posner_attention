@@ -80,8 +80,8 @@
     <Param val="pyglet" valType="str" updates="None" name="winBackend"/>
   </Settings>
   <Routines>
-    <Routine name="Invalid_Condition_Right">
-      <RoutineSettingsComponent name="Invalid_Condition_Right" plugin="None">
+    <Routine name="Final_Psychophysics_Experiment">
+      <RoutineSettingsComponent name="Final_Psychophysics_Experiment" plugin="None">
         <Param val="none" valType="str" updates="None" name="backgroundFit"/>
         <Param val="" valType="str" updates="None" name="backgroundImg"/>
         <Param val="$[0,0,0]" valType="color" updates="None" name="color"/>
@@ -90,7 +90,7 @@
         <Param val="False" valType="bool" updates="None" name="disabled"/>
         <Param val="" valType="code" updates="None" name="durationEstim"/>
         <Param val="False" valType="code" updates="None" name="forceNonSlip"/>
-        <Param val="Invalid_Condition_Right" valType="code" updates="None" name="name"/>
+        <Param val="Final_Psychophysics_Experiment" valType="code" updates="None" name="name"/>
         <Param val="True" valType="bool" updates="None" name="saveStartStop"/>
         <Param val="" valType="code" updates="constant" name="skipIf"/>
         <Param val="duration (s)" valType="str" updates="None" name="stopType"/>
@@ -245,7 +245,7 @@
       <Param name="name" updates="None" val="trials" valType="code"/>
       <Param name="random seed" updates="None" val="" valType="code"/>
     </LoopInitiator>
-    <Routine name="Invalid_Condition_Right"/>
+    <Routine name="Final_Psychophysics_Experiment"/>
     <LoopTerminator name="trials"/>
   </Flow>
 </PsychoPy2experiment>
