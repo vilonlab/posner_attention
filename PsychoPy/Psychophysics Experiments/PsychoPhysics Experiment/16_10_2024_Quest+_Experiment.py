@@ -399,8 +399,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         win=win,
         name='New_Stimulus', 
         image='default.png', mask=None, anchor='center',
-        ori=0.0, pos=[0,0], draggable=False, size=(25, 25),
-        color=[1,1,1], colorSpace='rgb', opacity=1.0,
+        ori=opacity * 180, pos=[0,0], draggable=False, size=(25, 25),
+        color=[1,1,1], colorSpace='rgb', opacity=quest.next_stimulus(),
         flipHoriz=False, flipVert=False,
         texRes=128.0, interpolate=False, depth=-4.0)
     
