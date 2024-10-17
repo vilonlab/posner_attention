@@ -1,8 +1,13 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
+<<<<<<< Updated upstream
 This experiment was created using PsychoPy3 Experiment Builder (v2024.2.1post4),
     on October 11, 2024, at 15:41
+=======
+This experiment was created using PsychoPy3 Experiment Builder (v2024.2.1),
+    on Fri Oct 11 16:50:02 2024
+>>>>>>> Stashed changes
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -39,7 +44,7 @@ deviceManager = hardware.DeviceManager()
 # ensure that relative paths start from the same directory as this script
 _thisDir = os.path.dirname(os.path.abspath(__file__))
 # store info about the experiment session
-psychopyVersion = '2024.2.1post4'
+psychopyVersion = '2024.2.1'
 expName = '6_9_2024_Invalid_Condition_Right'  # from the Builder filename that created this script
 # information about this experiment
 expInfo = {
@@ -126,7 +131,11 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version='',
         extraInfo=expInfo, runtimeInfo=None,
+<<<<<<< Updated upstream
         originPath='C:\\Users\\reidb\\Documents\\GitHub\\posner_attention\\PsychoPy\\Psychophysics Experiments\\PsychoPhysics Experiment\\20_9_2024_Final Psychophysics Experiment_lastrun.py',
+=======
+        originPath='/Users/lily/Documents/GitHub/posner_attention/PsychoPy/Psychophysics Experiments/PsychoPhysics Experiment/20_9_2024_Final Psychophysics Experiment_lastrun.py',
+>>>>>>> Stashed changes
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
@@ -258,11 +267,11 @@ def setupDevices(expInfo, thisExp, win):
         deviceManager.addDevice(
             deviceClass='keyboard', deviceName='defaultKeyboard', backend='iohub'
         )
-    if deviceManager.getDevice('key_resp') is None:
-        # initialise key_resp
-        key_resp = deviceManager.addDevice(
+    if deviceManager.getDevice('Key_resp') is None:
+        # initialise Key_resp
+        Key_resp = deviceManager.addDevice(
             deviceClass='keyboard',
-            deviceName='key_resp',
+            deviceName='Key_resp',
         )
     # return True if completed successfully
     return True
@@ -363,7 +372,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     # Start Code - component code to be run after the window creation
     
-    # --- Initialize components for Routine "Invalid_Condition_Right" ---
+    # --- Initialize components for Routine "Final_Psychophysics_Exp" ---
     Fixation_Point = visual.ShapeStim(
         win=win, name='Fixation_Point',
         size=(5, 5), vertices='circle',
@@ -378,22 +387,29 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         lineWidth=1.0,
         colorSpace='rgb', lineColor='black', fillColor='black',
         opacity=None, depth=-1.0, interpolate=True)
-    key_resp = keyboard.Keyboard(deviceName='key_resp')
-    text = visual.TextStim(win=win, name='text',
+    Time = visual.ShapeStim(
+        win=win, name='Time',
+        size=(0.5, 0.5), vertices='circle',
+        ori=0.0, pos=(0, 0), draggable=False, anchor='center',
+        lineWidth=1.0,
+        colorSpace='rgb', lineColor='white', fillColor='white',
+        opacity=0.0, depth=-2.0, interpolate=True)
+    Gabor = visual.ImageStim(
+        win=win,
+        name='Gabor', 
+        image='default.png', mask=None, anchor='center',
+        ori=0.0, pos=[0,0], draggable=False, size=(25, 25),
+        color=[1,1,1], colorSpace='rgb', opacity=1.0,
+        flipHoriz=False, flipVert=False,
+        texRes=128.0, interpolate=False, depth=-3.0)
+    Text = visual.TextStim(win=win, name='Text',
         text="Were the lines going up and down or side to side?\n\nPress the 'u' button for up and down\n\nPress the 's' button for side to side",
         font='Arial',
         pos=(0, 0), draggable=False, height=5.0, wrapWidth=200.0, ori=0.0, 
         color='white', colorSpace='rgb', opacity=None, 
         languageStyle='LTR',
-        depth=-3.0);
-    New_Stimulus = visual.ImageStim(
-        win=win,
-        name='New_Stimulus', 
-        image='default.png', mask=None, anchor='center',
-        ori=0.0, pos=[0,0], draggable=False, size=(25, 25),
-        color=[1,1,1], colorSpace='rgb', opacity=1.0,
-        flipHoriz=False, flipVert=False,
-        texRes=128.0, interpolate=False, depth=-4.0)
+        depth=-4.0);
+    Key_resp = keyboard.Keyboard(deviceName='Key_resp')
     
     # create some handy timers
     
@@ -458,32 +474,32 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             for paramName in thisTrial:
                 globals()[paramName] = thisTrial[paramName]
         
-        # --- Prepare to start Routine "Invalid_Condition_Right" ---
-        # create an object to store info about Routine Invalid_Condition_Right
-        Invalid_Condition_Right = data.Routine(
-            name='Invalid_Condition_Right',
-            components=[Fixation_Point, Cue, key_resp, text, New_Stimulus],
+        # --- Prepare to start Routine "Final_Psychophysics_Exp" ---
+        # create an object to store info about Routine Final_Psychophysics_Exp
+        Final_Psychophysics_Exp = data.Routine(
+            name='Final_Psychophysics_Exp',
+            components=[Fixation_Point, Cue, Time, Gabor, Text, Key_resp],
         )
-        Invalid_Condition_Right.status = NOT_STARTED
+        Final_Psychophysics_Exp.status = NOT_STARTED
         continueRoutine = True
         # update component parameters for each repeat
         Cue.setPos(PositionCue)
-        # create starting attributes for key_resp
-        key_resp.keys = []
-        key_resp.rt = []
-        _key_resp_allKeys = []
-        New_Stimulus.setOpacity(Opacity)
-        New_Stimulus.setPos(Position)
-        New_Stimulus.setImage(ImageFile)
-        # store start times for Invalid_Condition_Right
-        Invalid_Condition_Right.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
-        Invalid_Condition_Right.tStart = globalClock.getTime(format='float')
-        Invalid_Condition_Right.status = STARTED
-        thisExp.addData('Invalid_Condition_Right.started', Invalid_Condition_Right.tStart)
-        Invalid_Condition_Right.maxDuration = None
+        Gabor.setOpacity(Opacity)
+        Gabor.setPos(Position)
+        Gabor.setImage(ImageFile)
+        # create starting attributes for Key_resp
+        Key_resp.keys = []
+        Key_resp.rt = []
+        _Key_resp_allKeys = []
+        # store start times for Final_Psychophysics_Exp
+        Final_Psychophysics_Exp.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
+        Final_Psychophysics_Exp.tStart = globalClock.getTime(format='float')
+        Final_Psychophysics_Exp.status = STARTED
+        thisExp.addData('Final_Psychophysics_Exp.started', Final_Psychophysics_Exp.tStart)
+        Final_Psychophysics_Exp.maxDuration = None
         # keep track of which components have finished
-        Invalid_Condition_RightComponents = Invalid_Condition_Right.components
-        for thisComponent in Invalid_Condition_Right.components:
+        Final_Psychophysics_ExpComponents = Final_Psychophysics_Exp.components
+        for thisComponent in Final_Psychophysics_Exp.components:
             thisComponent.tStart = None
             thisComponent.tStop = None
             thisComponent.tStartRefresh = None
@@ -495,11 +511,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         _timeToFirstFrame = win.getFutureFlipTime(clock="now")
         frameN = -1
         
-        # --- Run Routine "Invalid_Condition_Right" ---
+        # --- Run Routine "Final_Psychophysics_Exp" ---
         # if trial has changed, end Routine now
         if isinstance(trials, data.TrialHandler2) and thisTrial.thisN != trials.thisTrial.thisN:
             continueRoutine = False
-        Invalid_Condition_Right.forceEnded = routineForceEnded = not continueRoutine
+        Final_Psychophysics_Exp.forceEnded = routineForceEnded = not continueRoutine
         while continueRoutine:
             # get current time
             t = routineTimer.getTime()
@@ -531,7 +547,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Fixation_Point is stopping this frame...
             if Fixation_Point.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 1.4-frameTolerance:
+                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 1-frameTolerance:
                     # keep track of stop time/frame for later
                     Fixation_Point.tStop = t  # not accounting for scr refresh
                     Fixation_Point.tStopRefresh = tThisFlipGlobal  # on global time
@@ -565,7 +581,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Cue is stopping this frame...
             if Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Cue.tStartRefresh + 0.04-frameTolerance:
+                if tThisFlipGlobal > Cue.tStartRefresh + 0.2-frameTolerance:
                     # keep track of stop time/frame for later
                     Cue.tStop = t  # not accounting for scr refresh
                     Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -576,92 +592,126 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     Cue.status = FINISHED
                     Cue.setAutoDraw(False)
             
-            # *key_resp* updates
+            # *Time* updates
+            
+            # if Time is starting this frame...
+            if Time.status == NOT_STARTED and tThisFlip >= 1.2-frameTolerance:
+                # keep track of start time/frame for later
+                Time.frameNStart = frameN  # exact frame index
+                Time.tStart = t  # local t and not account for scr refresh
+                Time.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(Time, 'tStartRefresh')  # time at next scr refresh
+                # add timestamp to datafile
+                thisExp.timestampOnFlip(win, 'Time.started')
+                # update status
+                Time.status = STARTED
+                Time.setAutoDraw(True)
+            
+            # if Time is active this frame...
+            if Time.status == STARTED:
+                # update params
+                pass
+            
+            # if Time is stopping this frame...
+            if Time.status == STARTED:
+                # is it time to stop? (based on global clock, using actual start)
+                if tThisFlipGlobal > Time.tStartRefresh + .450-frameTolerance:
+                    # keep track of stop time/frame for later
+                    Time.tStop = t  # not accounting for scr refresh
+                    Time.tStopRefresh = tThisFlipGlobal  # on global time
+                    Time.frameNStop = frameN  # exact frame index
+                    # add timestamp to datafile
+                    thisExp.timestampOnFlip(win, 'Time.stopped')
+                    # update status
+                    Time.status = FINISHED
+                    Time.setAutoDraw(False)
+            
+            # *Gabor* updates
+            
+            # if Gabor is starting this frame...
+            if Gabor.status == NOT_STARTED and tThisFlip >= 1.65-frameTolerance:
+                # keep track of start time/frame for later
+                Gabor.frameNStart = frameN  # exact frame index
+                Gabor.tStart = t  # local t and not account for scr refresh
+                Gabor.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(Gabor, 'tStartRefresh')  # time at next scr refresh
+                # add timestamp to datafile
+                thisExp.timestampOnFlip(win, 'Gabor.started')
+                # update status
+                Gabor.status = STARTED
+                Gabor.setAutoDraw(True)
+            
+            # if Gabor is active this frame...
+            if Gabor.status == STARTED:
+                # update params
+                pass
+            
+            # if Gabor is stopping this frame...
+            if Gabor.status == STARTED:
+                # is it time to stop? (based on global clock, using actual start)
+                if tThisFlipGlobal > Gabor.tStartRefresh + 1.0-frameTolerance:
+                    # keep track of stop time/frame for later
+                    Gabor.tStop = t  # not accounting for scr refresh
+                    Gabor.tStopRefresh = tThisFlipGlobal  # on global time
+                    Gabor.frameNStop = frameN  # exact frame index
+                    # add timestamp to datafile
+                    thisExp.timestampOnFlip(win, 'Gabor.stopped')
+                    # update status
+                    Gabor.status = FINISHED
+                    Gabor.setAutoDraw(False)
+            
+            # *Text* updates
+            
+            # if Text is starting this frame...
+            if Text.status == NOT_STARTED and tThisFlip >= 2.65-frameTolerance:
+                # keep track of start time/frame for later
+                Text.frameNStart = frameN  # exact frame index
+                Text.tStart = t  # local t and not account for scr refresh
+                Text.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(Text, 'tStartRefresh')  # time at next scr refresh
+                # add timestamp to datafile
+                thisExp.timestampOnFlip(win, 'Text.started')
+                # update status
+                Text.status = STARTED
+                Text.setAutoDraw(True)
+            
+            # if Text is active this frame...
+            if Text.status == STARTED:
+                # update params
+                pass
+            
+            # *Key_resp* updates
             waitOnFlip = False
             
-            # if key_resp is starting this frame...
-            if key_resp.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
+            # if Key_resp is starting this frame...
+            if Key_resp.status == NOT_STARTED and tThisFlip >= 2.65-frameTolerance:
                 # keep track of start time/frame for later
-                key_resp.frameNStart = frameN  # exact frame index
-                key_resp.tStart = t  # local t and not account for scr refresh
-                key_resp.tStartRefresh = tThisFlipGlobal  # on global time
-                win.timeOnFlip(key_resp, 'tStartRefresh')  # time at next scr refresh
+                Key_resp.frameNStart = frameN  # exact frame index
+                Key_resp.tStart = t  # local t and not account for scr refresh
+                Key_resp.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(Key_resp, 'tStartRefresh')  # time at next scr refresh
                 # add timestamp to datafile
-                thisExp.timestampOnFlip(win, 'key_resp.started')
+                thisExp.timestampOnFlip(win, 'Key_resp.started')
                 # update status
-                key_resp.status = STARTED
+                Key_resp.status = STARTED
                 # keyboard checking is just starting
                 waitOnFlip = True
-                win.callOnFlip(key_resp.clock.reset)  # t=0 on next screen flip
-                win.callOnFlip(key_resp.clearEvents, eventType='keyboard')  # clear events on next screen flip
-            if key_resp.status == STARTED and not waitOnFlip:
-                theseKeys = key_resp.getKeys(keyList=['u','s'], ignoreKeys=["escape"], waitRelease=False)
-                _key_resp_allKeys.extend(theseKeys)
-                if len(_key_resp_allKeys):
-                    key_resp.keys = _key_resp_allKeys[-1].name  # just the last key pressed
-                    key_resp.rt = _key_resp_allKeys[-1].rt
-                    key_resp.duration = _key_resp_allKeys[-1].duration
+                win.callOnFlip(Key_resp.clock.reset)  # t=0 on next screen flip
+                win.callOnFlip(Key_resp.clearEvents, eventType='keyboard')  # clear events on next screen flip
+            if Key_resp.status == STARTED and not waitOnFlip:
+                theseKeys = Key_resp.getKeys(keyList=['u','s'], ignoreKeys=["escape"], waitRelease=False)
+                _Key_resp_allKeys.extend(theseKeys)
+                if len(_Key_resp_allKeys):
+                    Key_resp.keys = _Key_resp_allKeys[-1].name  # just the last key pressed
+                    Key_resp.rt = _Key_resp_allKeys[-1].rt
+                    Key_resp.duration = _Key_resp_allKeys[-1].duration
                     # was this correct?
-                    if (key_resp.keys == str("'u'")) or (key_resp.keys == "'u'"):
-                        key_resp.corr = 1
+                    if (Key_resp.keys == str("'u'")) or (Key_resp.keys == "'u'"):
+                        Key_resp.corr = 1
                     else:
-                        key_resp.corr = 0
+                        Key_resp.corr = 0
                     # a response ends the routine
                     continueRoutine = False
-            
-            # *text* updates
-            
-            # if text is starting this frame...
-            if text.status == NOT_STARTED and tThisFlip >= 1.4-frameTolerance:
-                # keep track of start time/frame for later
-                text.frameNStart = frameN  # exact frame index
-                text.tStart = t  # local t and not account for scr refresh
-                text.tStartRefresh = tThisFlipGlobal  # on global time
-                win.timeOnFlip(text, 'tStartRefresh')  # time at next scr refresh
-                # add timestamp to datafile
-                thisExp.timestampOnFlip(win, 'text.started')
-                # update status
-                text.status = STARTED
-                text.setAutoDraw(True)
-            
-            # if text is active this frame...
-            if text.status == STARTED:
-                # update params
-                pass
-            
-            # *New_Stimulus* updates
-            
-            # if New_Stimulus is starting this frame...
-            if New_Stimulus.status == NOT_STARTED and tThisFlip >= 1.1-frameTolerance:
-                # keep track of start time/frame for later
-                New_Stimulus.frameNStart = frameN  # exact frame index
-                New_Stimulus.tStart = t  # local t and not account for scr refresh
-                New_Stimulus.tStartRefresh = tThisFlipGlobal  # on global time
-                win.timeOnFlip(New_Stimulus, 'tStartRefresh')  # time at next scr refresh
-                # add timestamp to datafile
-                thisExp.timestampOnFlip(win, 'New_Stimulus.started')
-                # update status
-                New_Stimulus.status = STARTED
-                New_Stimulus.setAutoDraw(True)
-            
-            # if New_Stimulus is active this frame...
-            if New_Stimulus.status == STARTED:
-                # update params
-                pass
-            
-            # if New_Stimulus is stopping this frame...
-            if New_Stimulus.status == STARTED:
-                # is it time to stop? (based on local clock)
-                if tThisFlip > 1.2-frameTolerance:
-                    # keep track of stop time/frame for later
-                    New_Stimulus.tStop = t  # not accounting for scr refresh
-                    New_Stimulus.tStopRefresh = tThisFlipGlobal  # on global time
-                    New_Stimulus.frameNStop = frameN  # exact frame index
-                    # add timestamp to datafile
-                    thisExp.timestampOnFlip(win, 'New_Stimulus.stopped')
-                    # update status
-                    New_Stimulus.status = FINISHED
-                    New_Stimulus.setAutoDraw(False)
             
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
@@ -682,10 +732,10 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             
             # check if all components have finished
             if not continueRoutine:  # a component has requested a forced-end of Routine
-                Invalid_Condition_Right.forceEnded = routineForceEnded = True
+                Final_Psychophysics_Exp.forceEnded = routineForceEnded = True
                 break
             continueRoutine = False  # will revert to True if at least one component still running
-            for thisComponent in Invalid_Condition_Right.components:
+            for thisComponent in Final_Psychophysics_Exp.components:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
                     break  # at least one component has not yet finished
@@ -694,29 +744,29 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
                 win.flip()
         
-        # --- Ending Routine "Invalid_Condition_Right" ---
-        for thisComponent in Invalid_Condition_Right.components:
+        # --- Ending Routine "Final_Psychophysics_Exp" ---
+        for thisComponent in Final_Psychophysics_Exp.components:
             if hasattr(thisComponent, "setAutoDraw"):
                 thisComponent.setAutoDraw(False)
-        # store stop times for Invalid_Condition_Right
-        Invalid_Condition_Right.tStop = globalClock.getTime(format='float')
-        Invalid_Condition_Right.tStopRefresh = tThisFlipGlobal
-        thisExp.addData('Invalid_Condition_Right.stopped', Invalid_Condition_Right.tStop)
+        # store stop times for Final_Psychophysics_Exp
+        Final_Psychophysics_Exp.tStop = globalClock.getTime(format='float')
+        Final_Psychophysics_Exp.tStopRefresh = tThisFlipGlobal
+        thisExp.addData('Final_Psychophysics_Exp.stopped', Final_Psychophysics_Exp.tStop)
         # check responses
-        if key_resp.keys in ['', [], None]:  # No response was made
-            key_resp.keys = None
+        if Key_resp.keys in ['', [], None]:  # No response was made
+            Key_resp.keys = None
             # was no response the correct answer?!
             if str("'u'").lower() == 'none':
-               key_resp.corr = 1;  # correct non-response
+               Key_resp.corr = 1;  # correct non-response
             else:
-               key_resp.corr = 0;  # failed to respond (incorrectly)
+               Key_resp.corr = 0;  # failed to respond (incorrectly)
         # store data for trials (TrialHandler)
-        trials.addData('key_resp.keys',key_resp.keys)
-        trials.addData('key_resp.corr', key_resp.corr)
-        if key_resp.keys != None:  # we had a response
-            trials.addData('key_resp.rt', key_resp.rt)
-            trials.addData('key_resp.duration', key_resp.duration)
-        # the Routine "Invalid_Condition_Right" was not non-slip safe, so reset the non-slip timer
+        trials.addData('Key_resp.keys',Key_resp.keys)
+        trials.addData('Key_resp.corr', Key_resp.corr)
+        if Key_resp.keys != None:  # we had a response
+            trials.addData('Key_resp.rt', Key_resp.rt)
+            trials.addData('Key_resp.duration', Key_resp.duration)
+        # the Routine "Final_Psychophysics_Exp" was not non-slip safe, so reset the non-slip timer
         routineTimer.reset()
         thisExp.nextEntry()
         
