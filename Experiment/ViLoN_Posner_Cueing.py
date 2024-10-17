@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2024.2.1post4),
-    on October 17, 2024, at 14:25
+    on October 17, 2024, at 14:27
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -32,26 +32,6 @@ import sys  # to get file system encoding
 
 import psychopy.iohub as io
 from psychopy.hardware import keyboard
-
-# Run 'Before Experiment' code from Before
-import questplus
-
-# Define the stimulus space
-stimulus_space = np.linspace(0, 1, 100)  # Example stimulus space
-
-# Define the psychometric function
-def psychometric_function(stimulus, threshold, slope):
-    return 1 / (1 + np.exp(-(stimulus - threshold) / slope))
-
-# Define the prior distributions for the parameters
-priors = {
-    'threshold': questplus.Prior('uniform', lower=0, upper=1),
-    'slope': questplus.Prior('uniform', lower=0.1, upper=10)
-}
-
-# Create the QUEST+ object
-quest = questplus.QuestPlus(stimulus_space, psychometric_function, priors)
-
 
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
@@ -146,7 +126,7 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version='',
         extraInfo=expInfo, runtimeInfo=None,
-        originPath='C:\\Users\\reidb\\Documents\\GitHub\\posner_attention\\Experiment\\ViLoN_Posner_Cueing_lastrun.py',
+        originPath='C:\\Users\\reidb\\Documents\\GitHub\\posner_attention\\Experiment\\ViLoN_Posner_Cueing.py',
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
@@ -393,21 +373,21 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         ori=0.0, pos=(0, 0), draggable=False, anchor='center',
         lineWidth=1.0,
         colorSpace='rgb', lineColor='white', fillColor='white',
-        opacity=None, depth=-1.0, interpolate=True)
+        opacity=None, depth=0.0, interpolate=True)
     Cue = visual.ShapeStim(
         win=win, name='Cue',units='deg', 
         size=[25, 25], vertices='circle',
         ori=0.0, pos=[80, 0], draggable=False, anchor='center',
         lineWidth=1.0,
         colorSpace='rgb', lineColor='white', fillColor='white',
-        opacity=None, depth=-2.0, interpolate=True)
+        opacity=None, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
         tex='sin', mask='circle', anchor='center',
         ori=0.0, pos=[80,0], draggable=False, size=[25, 25], sf=[0.25], phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=None, contrast=1.0, blendmode='avg',
-        texRes=128.0, interpolate=True, depth=-3.0)
+        texRes=128.0, interpolate=True, depth=-2.0)
     key_resp = keyboard.Keyboard(deviceName='key_resp')
     text = visual.TextStim(win=win, name='text',
         text="Were the lines up and down or side to side?\n\nPress 'u' for up and down\n\nPress 's' for side to side",
@@ -415,7 +395,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         pos=(0, 0), draggable=False, height=0.05, wrapWidth=None, ori=0.0, 
         color='white', colorSpace='rgb', opacity=None, 
         languageStyle='LTR',
-        depth=-5.0);
+        depth=-4.0);
     
     # create some handy timers
     
