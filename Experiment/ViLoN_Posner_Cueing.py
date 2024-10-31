@@ -1,8 +1,8 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-This experiment was created using PsychoPy3 Experiment Builder (v2024.2.1post4),
-    on October 17, 2024, at 14:27
+This experiment was created using PsychoPy3 Experiment Builder (v2024.1.5),
+    on Thu Oct 31 11:07:23 2024
 If you publish work using this script the most relevant publication is:
 
     Peirce J, Gray JR, Simpson S, MacAskill M, Höchenberger R, Sogo H, Kastman E, Lindeløv JK. (2019) 
@@ -33,13 +33,32 @@ import sys  # to get file system encoding
 import psychopy.iohub as io
 from psychopy.hardware import keyboard
 
+from questplus import QuestPlus
+
+# Initialize QuestPlus
+stim_domain = {'intensity': np.linspace(0.1, 1.0, 10)}
+param_domain = {
+    'threshold': np.linspace(0.1, 1.0, 10),
+    'slope': np.linspace(1, 10, 10),
+    'lapse_rate': np.linspace(0, 0.05, 5)
+}
+outcome_domain = {'response': [0, 1]}  # 0 for incorrect, 1 for correct
+
+qp = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='log10'
+)
+
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
 deviceManager = hardware.DeviceManager()
 # ensure that relative paths start from the same directory as this script
 _thisDir = os.path.dirname(os.path.abspath(__file__))
 # store info about the experiment session
-psychopyVersion = '2024.2.1post4'
+psychopyVersion = '2024.1.5'
 expName = 'ViLoN_Posner_Cueing'  # from the Builder filename that created this script
 # information about this experiment
 expInfo = {
@@ -61,6 +80,7 @@ PILOTING = core.setPilotModeFromArgs()
 # start off with values from experiment settings
 _fullScr = True
 _winSize = (1024, 768)
+_loggingLevel = logging.getLevel('info')
 # if in pilot mode, apply overrides according to preferences
 if PILOTING:
     # force windowed mode
@@ -68,6 +88,10 @@ if PILOTING:
         _fullScr = False
         # set window size
         _winSize = prefs.piloting['forcedWindowSize']
+    # override logging level
+    _loggingLevel = logging.getLevel(
+        prefs.piloting['pilotLoggingLevel']
+    )
 
 def showExpInfoDlg(expInfo):
     """
@@ -126,7 +150,7 @@ def setupData(expInfo, dataDir=None):
     thisExp = data.ExperimentHandler(
         name=expName, version='',
         extraInfo=expInfo, runtimeInfo=None,
-        originPath='C:\\Users\\reidb\\Documents\\GitHub\\posner_attention\\Experiment\\ViLoN_Posner_Cueing.py',
+        originPath='/Users/trentonwirth/GitHub/posner_attention/Experiment/ViLoN_Posner_Cueing.py',
         savePickle=True, saveWideText=True,
         dataFileName=dataDir + os.sep + filename, sortColumns='time'
     )
@@ -150,23 +174,10 @@ def setupLogging(filename):
     psychopy.logging.LogFile
         Text stream to receive inputs from the logging system.
     """
-    # set how much information should be printed to the console / app
-    if PILOTING:
-        logging.console.setLevel(
-            prefs.piloting['pilotConsoleLoggingLevel']
-        )
-    else:
-        logging.console.setLevel('warning')
+    # this outputs to the screen, not a file
+    logging.console.setLevel(_loggingLevel)
     # save a log file for detail verbose info
-    logFile = logging.LogFile(filename+'.log')
-    if PILOTING:
-        logFile.setLevel(
-            prefs.piloting['pilotLoggingLevel']
-        )
-    else:
-        logFile.setLevel(
-            logging.getLevel('info')
-        )
+    logFile = logging.LogFile(filename+'.log', level=_loggingLevel)
     
     return logFile
 
@@ -211,7 +222,7 @@ def setupWindow(expInfo=None, win=None):
     if expInfo is not None:
         # get/measure frame rate if not already in expInfo
         if win._monitorFrameRate is None:
-            win._monitorFrameRate = win.getActualFrameRate(infoMsg='Attempting to measure frame rate of screen, please wait...')
+            win.getActualFrameRate(infoMsg='Attempting to measure frame rate of screen, please wait...')
         expInfo['frameRate'] = win._monitorFrameRate
     win.mouseVisible = False
     win.hideMessage()
@@ -247,12 +258,10 @@ def setupDevices(expInfo, thisExp, win):
     # Setup iohub keyboard
     ioConfig['Keyboard'] = dict(use_keymap='psychopy')
     
-    # Setup iohub experiment
-    ioConfig['Experiment'] = dict(filename=thisExp.dataFileName)
-    
-    # Start ioHub server
+    ioSession = '1'
+    if 'session' in expInfo:
+        ioSession = str(expInfo['session'])
     ioServer = io.launchHubServer(window=win, **ioConfig)
-    
     # store ioServer object in the device manager
     deviceManager.ioServer = ioServer
     
@@ -290,11 +299,11 @@ def pauseExperiment(thisExp, win=None, timers=[], playbackComponents=[]):
     if thisExp.status != PAUSED:
         return
     
-    # start a timer to figure out how long we're paused for
-    pauseTimer = core.Clock()
     # pause any playback components
     for comp in playbackComponents:
         comp.pause()
+    # prevent components from auto-drawing
+    win.stashAutoDraw()
     # make sure we have a keyboard
     defaultKeyboard = deviceManager.getDevice('defaultKeyboard')
     if defaultKeyboard is None:
@@ -308,17 +317,19 @@ def pauseExperiment(thisExp, win=None, timers=[], playbackComponents=[]):
         # check for quit (typically the Esc key)
         if defaultKeyboard.getKeys(keyList=['escape']):
             endExperiment(thisExp, win=win)
-        # sleep 1ms so other threads can execute
-        clock.time.sleep(0.001)
+        # flip the screen
+        win.flip()
     # if stop was requested while paused, quit
     if thisExp.status == FINISHED:
         endExperiment(thisExp, win=win)
     # resume any playback components
     for comp in playbackComponents:
         comp.play()
+    # restore auto-drawn components
+    win.retrieveAutoDraw()
     # reset any timers
     for timer in timers:
-        timer.addTime(-pauseTimer.getTime())
+        timer.reset()
 
 
 def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
@@ -365,26 +376,25 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameDur = 1.0 / 60.0  # could not measure, so guess
     
     # Start Code - component code to be run after the window creation
-    
+    SIZE = [1, 1]
+    POSITION = [4, 0]
     # --- Initialize components for Routine "trial" ---
     Fixation_Point = visual.ShapeStim(
         win=win, name='Fixation_Point', vertices='cross',units='deg', 
-        size=(25, 25),
-        ori=0.0, pos=(0, 0), draggable=False, anchor='center',
-        lineWidth=1.0,
-        colorSpace='rgb', lineColor='white', fillColor='white',
+        size=(SIZE[0], SIZE[1]),
+        ori=0.0, pos=(0, 0), anchor='center',
+        lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=None, depth=0.0, interpolate=True)
     Cue = visual.ShapeStim(
         win=win, name='Cue',units='deg', 
-        size=[25, 25], vertices='circle',
-        ori=0.0, pos=[80, 0], draggable=False, anchor='center',
-        lineWidth=1.0,
-        colorSpace='rgb', lineColor='white', fillColor='white',
+        size=[1, 1], vertices='circle',
+        ori=0.0, pos=[POSITION[0], POSITION[1]], anchor='center',
+        lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=None, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
         tex='sin', mask='circle', anchor='center',
-        ori=0.0, pos=[80,0], draggable=False, size=[25, 25], sf=[0.25], phase=0.0,
+        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[25, 25], sf=[0.25], phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=None, contrast=1.0, blendmode='avg',
         texRes=128.0, interpolate=True, depth=-2.0)
@@ -392,7 +402,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     text = visual.TextStim(win=win, name='text',
         text="Were the lines up and down or side to side?\n\nPress 'u' for up and down\n\nPress 's' for side to side",
         font='Arial',
-        pos=(0, 0), draggable=False, height=0.05, wrapWidth=None, ori=0.0, 
+        pos=(0, 0), height=0.05, wrapWidth=None, ori=0.0, 
         color='white', colorSpace='rgb', opacity=None, 
         languageStyle='LTR',
         depth=-4.0);
@@ -426,58 +436,51 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     )
     
     # set up handler to look after randomisation of conditions etc
-    Trial_Rep = data.TrialHandler2(
-        name='Trial_Rep',
-        nReps=10.0, 
-        method='random', 
-        extraInfo=expInfo, 
-        originPath=-1, 
-        trialList=[None], 
-        seed=None, 
-    )
+    Trial_Rep = data.TrialHandler(nReps=10.0, method='random', 
+        extraInfo=expInfo, originPath=-1,
+        trialList=[None],
+        seed=None, name='Trial_Rep')
     thisExp.addLoop(Trial_Rep)  # add the loop to the experiment
     thisTrial_Rep = Trial_Rep.trialList[0]  # so we can initialise stimuli with some values
     # abbreviate parameter names if possible (e.g. rgb = thisTrial_Rep.rgb)
     if thisTrial_Rep != None:
         for paramName in thisTrial_Rep:
             globals()[paramName] = thisTrial_Rep[paramName]
-    if thisSession is not None:
-        # if running in a Session with a Liaison client, send data up to now
-        thisSession.sendExperimentData()
     
     for thisTrial_Rep in Trial_Rep:
         currentLoop = Trial_Rep
         thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
-        if thisSession is not None:
-            # if running in a Session with a Liaison client, send data up to now
-            thisSession.sendExperimentData()
+        # pause experiment here if requested
+        if thisExp.status == PAUSED:
+            pauseExperiment(
+                thisExp=thisExp, 
+                win=win, 
+                timers=[routineTimer], 
+                playbackComponents=[]
+        )
         # abbreviate parameter names if possible (e.g. rgb = thisTrial_Rep.rgb)
         if thisTrial_Rep != None:
             for paramName in thisTrial_Rep:
                 globals()[paramName] = thisTrial_Rep[paramName]
         
+        # Get the next stimulus intensity from QuestPlus
+        next_stim = qp.next_stim
+        intensity = next_stim['intensity']
+        
+        # Update Gabor contrast
+        Gabor.contrast = intensity
+        
         # --- Prepare to start Routine "trial" ---
-        # create an object to store info about Routine trial
-        trial = data.Routine(
-            name='trial',
-            components=[Fixation_Point, Cue, Gabor, key_resp, text],
-        )
-        trial.status = NOT_STARTED
         continueRoutine = True
         # update component parameters for each repeat
+        thisExp.addData('trial.started', globalClock.getTime(format='float'))
         # create starting attributes for key_resp
         key_resp.keys = []
         key_resp.rt = []
         _key_resp_allKeys = []
-        # store start times for trial
-        trial.tStartRefresh = win.getFutureFlipTime(clock=globalClock)
-        trial.tStart = globalClock.getTime(format='float')
-        trial.status = STARTED
-        thisExp.addData('trial.started', trial.tStart)
-        trial.maxDuration = None
         # keep track of which components have finished
-        trialComponents = trial.components
-        for thisComponent in trial.components:
+        trialComponents = [Fixation_Point, Cue, Gabor, key_resp, text]
+        for thisComponent in trialComponents:
             thisComponent.tStart = None
             thisComponent.tStop = None
             thisComponent.tStartRefresh = None
@@ -490,10 +493,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameN = -1
         
         # --- Run Routine "trial" ---
-        # if trial has changed, end Routine now
-        if isinstance(Trial_Rep, data.TrialHandler2) and thisTrial_Rep.thisN != Trial_Rep.thisTrial.thisN:
-            continueRoutine = False
-        trial.forceEnded = routineForceEnded = not continueRoutine
+        routineForceEnded = not continueRoutine
         while continueRoutine:
             # get current time
             t = routineTimer.getTime()
@@ -658,23 +658,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             if thisExp.status == FINISHED or endExpNow:
                 endExperiment(thisExp, win=win)
                 return
-            # pause experiment here if requested
-            if thisExp.status == PAUSED:
-                pauseExperiment(
-                    thisExp=thisExp, 
-                    win=win, 
-                    timers=[routineTimer], 
-                    playbackComponents=[]
-                )
-                # skip the frame we paused on
-                continue
             
             # check if all components have finished
             if not continueRoutine:  # a component has requested a forced-end of Routine
-                trial.forceEnded = routineForceEnded = True
+                routineForceEnded = True
                 break
             continueRoutine = False  # will revert to True if at least one component still running
-            for thisComponent in trial.components:
+            for thisComponent in trialComponents:
                 if hasattr(thisComponent, "status") and thisComponent.status != FINISHED:
                     continueRoutine = True
                     break  # at least one component has not yet finished
@@ -684,16 +674,17 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 win.flip()
         
         # --- Ending Routine "trial" ---
-        for thisComponent in trial.components:
+        for thisComponent in trialComponents:
             if hasattr(thisComponent, "setAutoDraw"):
                 thisComponent.setAutoDraw(False)
-        # store stop times for trial
-        trial.tStop = globalClock.getTime(format='float')
-        trial.tStopRefresh = tThisFlipGlobal
-        thisExp.addData('trial.stopped', trial.tStop)
+        thisExp.addData('trial.stopped', globalClock.getTime(format='float'))
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
+        else:
+            # Update QuestPlus with the outcome
+            response = 1 if key_resp.keys == 'u' else 0
+            qp.update(stim={'intensity': intensity}, outcome={'response': response})
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
         if key_resp.keys != None:  # we had a response
             Trial_Rep.addData('key_resp.rt', key_resp.rt)
@@ -702,11 +693,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         routineTimer.reset()
         thisExp.nextEntry()
         
+        if thisSession is not None:
+            # if running in a Session with a Liaison client, send data up to now
+            thisSession.sendExperimentData()
     # completed 10.0 repeats of 'Trial_Rep'
     
-    if thisSession is not None:
-        # if running in a Session with a Liaison client, send data up to now
-        thisSession.sendExperimentData()
     
     # mark experiment as finished
     endExperiment(thisExp, win=win)
@@ -748,10 +739,11 @@ def endExperiment(thisExp, win=None):
         # Flip one final time so any remaining win.callOnFlip() 
         # and win.timeOnFlip() tasks get executed
         win.flip()
-    # return console logger level to WARNING
-    logging.console.setLevel(logging.WARNING)
     # mark experiment handler as finished
     thisExp.status = FINISHED
+    # shut down eyetracker, if there is one
+    if deviceManager.getDevice('eyetracker') is not None:
+        deviceManager.removeDevice('eyetracker')
     logging.flush()
 
 
@@ -773,6 +765,9 @@ def quit(thisExp, win=None, thisSession=None):
         # and win.timeOnFlip() tasks get executed before quitting
         win.flip()
         win.close()
+    # shut down eyetracker, if there is one
+    if deviceManager.getDevice('eyetracker') is not None:
+        deviceManager.removeDevice('eyetracker')
     logging.flush()
     if thisSession is not None:
         thisSession.stop()
