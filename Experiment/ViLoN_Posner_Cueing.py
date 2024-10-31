@@ -376,8 +376,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         frameDur = 1.0 / 60.0  # could not measure, so guess
     
     # Start Code - component code to be run after the window creation
-    SIZE = [1, 1]
-    POSITION = [4, 0]
+
+    ### TDW hardcoded values
+
+    SIZE = [1.5, 1.5]
+    POSITION = [8, 0]
+    SPATIAL_FREQUENCY = 5
+
     # --- Initialize components for Routine "trial" ---
     Fixation_Point = visual.ShapeStim(
         win=win, name='Fixation_Point', vertices='cross',units='deg', 
@@ -387,14 +392,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         opacity=None, depth=0.0, interpolate=True)
     Cue = visual.ShapeStim(
         win=win, name='Cue',units='deg', 
-        size=[1, 1], vertices='circle',
+        size=[SIZE[0], SIZE[1]], vertices='circle',
         ori=0.0, pos=[POSITION[0], POSITION[1]], anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=None, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
         tex='sin', mask='circle', anchor='center',
-        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[25, 25], sf=[0.25], phase=0.0,
+        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[SIZE[0], SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=None, contrast=1.0, blendmode='avg',
         texRes=128.0, interpolate=True, depth=-2.0)
@@ -678,6 +683,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             if hasattr(thisComponent, "setAutoDraw"):
                 thisComponent.setAutoDraw(False)
         thisExp.addData('trial.stopped', globalClock.getTime(format='float'))
+        # Add intensity to the data file
+        thisExp.addData('Gabor.intensity', intensity)
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
