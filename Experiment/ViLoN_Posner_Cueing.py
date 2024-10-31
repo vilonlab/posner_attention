@@ -36,9 +36,9 @@ from psychopy.hardware import keyboard
 from questplus import QuestPlus
 
 # Initialize QuestPlus
-stim_domain = {'intensity': np.linspace(0.1, 1.0, 10)}
+stim_domain = {'intensity': np.linspace(0.05, 1.0, 30)}
 param_domain = {
-    'threshold': np.linspace(0.1, 1.0, 10),
+    'threshold': np.linspace(0.05, 1.0, 30),
     'slope': np.linspace(1, 10, 10),
     'lapse_rate': np.linspace(0, 0.05, 5)
 }
@@ -441,7 +441,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     )
     
     # set up handler to look after randomisation of conditions etc
-    Trial_Rep = data.TrialHandler(nReps=10.0, method='random', 
+    Trial_Rep = data.TrialHandler(nReps=30.0, method='random', 
         extraInfo=expInfo, originPath=-1,
         trialList=[None],
         seed=None, name='Trial_Rep')
