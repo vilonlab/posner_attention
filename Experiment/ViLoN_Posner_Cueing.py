@@ -410,7 +410,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         pos=(0, 0), height=0.05, wrapWidth=None, ori=0.0, 
         color='white', colorSpace='rgb', opacity=None, 
         languageStyle='LTR',
-        depth=-4.0);
+        depth=-4.0)
     
     # create some handy timers
     
@@ -471,6 +471,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # Get the next stimulus intensity from QuestPlus
         next_stim = qp.next_stim
         intensity = next_stim['intensity']
+        print(f"Next Intensity: {intensity}")
         
         # Update Gabor contrast
         Gabor.contrast = intensity
