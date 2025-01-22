@@ -42,7 +42,7 @@ param_domain = {
     'slope': np.linspace(1, 10, 10),
     'lapse_rate': np.linspace(0, 0.05, 5)
 }
-outcome_domain = {'response': [0, 1]}  # 0 for incorrect, 1 for correct
+outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
 qp = QuestPlus(
     stim_domain=stim_domain,
