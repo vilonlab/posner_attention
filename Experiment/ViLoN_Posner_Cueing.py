@@ -44,7 +44,16 @@ param_domain = {
 }
 outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-qp = QuestPlus(
+# Initialize *FOUR* QuestPlus staircases - one for each orientation
+qp_matched = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='log10'
+)
+
+qp_mismatched = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -378,9 +387,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # Start Code - component code to be run after the window creation
 
     ### TDW hardcoded values
-
+    TRIAL_REPETITIONS = 3
     SIZE = [1.5, 1.5]
-    POSITION = [8, 0]
+    POSITION = np.array([8.0, 0.0])
     SPATIAL_FREQUENCY = 5
 
     # --- Initialize components for Routine "trial" ---
@@ -441,9 +450,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     )
     
     # set up handler to look after randomisation of conditions etc
-    Trial_Rep = data.TrialHandler(nReps=30.0, method='random', 
+    trialList = data.createFactorialTrialList({
+                'orientation': [0, 90],
+                'cue_position': [-1, 1], # -1 = Left, 1 = Right
+                'gabor_position_match': [True, False]  
+                })
+    Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
         extraInfo=expInfo, originPath=-1,
-        trialList=[None],
+        trialList=trialList,  # Using our conditions defined above
         seed=None, name='Trial_Rep')
     thisExp.addLoop(Trial_Rep)  # add the loop to the experiment
     thisTrial_Rep = Trial_Rep.trialList[0]  # so we can initialise stimuli with some values
@@ -454,6 +468,19 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     for thisTrial_Rep in Trial_Rep:
         currentLoop = Trial_Rep
+
+        # Calculate positions using numpy arrays
+        CUE_POSITION = np.array([POSITION[0] * thisTrial_Rep['cue_position'], POSITION[1]])
+        
+        if thisTrial_Rep['gabor_position_match']:
+            GABOR_POSITION = np.array([POSITION[0] * thisTrial_Rep['cue_position'], POSITION[1]])
+        else:
+            GABOR_POSITION = np.array([POSITION[0] * -thisTrial_Rep['cue_position'], POSITION[1]])
+            
+        # Update component positions
+        Cue.pos = CUE_POSITION
+        Gabor.pos = GABOR_POSITION
+
         thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
         # pause experiment here if requested
         if thisExp.status == PAUSED:
@@ -468,10 +495,28 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             for paramName in thisTrial_Rep:
                 globals()[paramName] = thisTrial_Rep[paramName]
         
-        # Get the next stimulus intensity from QuestPlus
-        next_stim = qp.next_stim
+
+        # In the trial routine
+        if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['gabor_position_match']:
+            Gabor.ori = 0
+            current_qp = qp_matched
+
+        elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['gabor_position_match']:
+            Gabor.ori = 0
+            current_qp = qp_mismatched
+
+        elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['gabor_position_match']:
+            Gabor.ori = 90
+            current_qp = qp_matched
+
+        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['gabor_position_match']:
+            Gabor.ori = 90
+            current_qp = qp_mismatched
+
+        # Get next intensity from current staircase
+        next_stim = current_qp.next_stim
         intensity = next_stim['intensity']
-        print(f"Next Intensity: {intensity}")
+        print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}")
         
         # Update Gabor contrast
         Gabor.contrast = intensity
@@ -686,13 +731,22 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('trial.stopped', globalClock.getTime(format='float'))
         # Add intensity to the data file
         thisExp.addData('Gabor.intensity', intensity)
+        # Add position to the data file
+        thisExp.addData('Gabor.pos', Gabor.pos)
+        # Add orientation to the data file
+        thisExp.addData('Gabor.ori', Gabor.ori)
+
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
         else:
             # Update QuestPlus with the outcome
-            response = 1 if key_resp.keys == 'u' else 0
-            qp.update(stim={'intensity': intensity}, outcome={'response': response})
+            # After response is collected
+            response = 1 if (
+                (key_resp.keys == 'u' and thisTrial_Rep['orientation'] == 0) or 
+                (key_resp.keys == 's' and thisTrial_Rep['orientation'] == 90)
+            ) else 0
+            current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
         if key_resp.keys != None:  # we had a response
             Trial_Rep.addData('key_resp.rt', key_resp.rt)
