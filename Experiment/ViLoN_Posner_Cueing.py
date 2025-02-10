@@ -44,8 +44,8 @@ param_domain = {
 }
 outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-# Initialize two QuestPlus staircases - one for each orientation
-qp_0deg_matched = QuestPlus(
+# Initialize *FOUR* QuestPlus staircases - one for each orientation
+qp_matched = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -53,7 +53,7 @@ qp_0deg_matched = QuestPlus(
     stim_scale='log10'
 )
 
-qp_90deg_matched = QuestPlus(
+qp_mismatched = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -61,21 +61,6 @@ qp_90deg_matched = QuestPlus(
     stim_scale='log10'
 )
 
-qp_0deg_mismatched = QuestPlus(
-    stim_domain=stim_domain,
-    param_domain=param_domain,
-    outcome_domain=outcome_domain,
-    func='weibull',
-    stim_scale='log10'
-)
-
-qp_90deg_mismatched = QuestPlus(
-    stim_domain=stim_domain,
-    param_domain=param_domain,
-    outcome_domain=outcome_domain,
-    func='weibull',
-    stim_scale='log10'
-)
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
 deviceManager = hardware.DeviceManager()
@@ -514,19 +499,19 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # In the trial routine
         if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 0
-            current_qp = qp_0deg_matched
+            current_qp = qp_matched
 
         elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 0
-            current_qp = qp_0deg_mismatched
+            current_qp = qp_mismatched
 
         elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 90
-            current_qp = qp_90deg_matched
+            current_qp = qp_matched
 
         elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 90
-            current_qp = qp_90deg_mismatched
+            current_qp = qp_mismatched
 
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
