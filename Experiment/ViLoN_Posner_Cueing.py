@@ -40,11 +40,11 @@ stim_domain = {'intensity': np.linspace(0.05, 1.0, 30)}
 param_domain = {
     'threshold': np.linspace(0.05, 1.0, 30),
     'slope': np.linspace(1, 10, 10),
-    'lapse_rate': np.linspace(0, 0.05, 5)
+    'lapse_rate': np.linspace(0, 0.10, 10)
 }
 outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-# Initialize *FOUR* QuestPlus staircases - one for each orientation
+# Initialize *TWO* QuestPlus staircases - one for each condition
 qp_valid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
@@ -413,13 +413,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         opacity=None, contrast=1.0, blendmode='avg',
         texRes=128.0, interpolate=True, depth=-2.0)
     key_resp = keyboard.Keyboard(deviceName='key_resp')
-    text = visual.TextStim(win=win, name='text',
-        text="Were the lines up and down or side to side?\n\nPress 'u' for up and down\n\nPress 's' for side to side",
-        font='Arial',
-        pos=(0, 0), height=0.05, wrapWidth=None, ori=0.0, 
-        color='white', colorSpace='rgb', opacity=None, 
-        languageStyle='LTR',
-        depth=-4.0)
+#    text = visual.TextStim(win=win, name='text',
+#        text="",
+#        font='Arial',
+#        pos=(0, 0), height=0.05, wrapWidth=None, ori=0.0, 
+#        color='white', colorSpace='rgb', opacity=None, 
+#        languageStyle='LTR',
+#        depth=-4.0)
     
     # create some handy timers
     
@@ -530,7 +530,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         key_resp.rt = []
         _key_resp_allKeys = []
         # keep track of which components have finished
-        trialComponents = [Fixation_Point, Cue, Gabor, key_resp, text]
+        trialComponents = [Fixation_Point, Cue, Gabor, key_resp]
         for thisComponent in trialComponents:
             thisComponent.tStart = None
             thisComponent.tStop = None
@@ -555,6 +555,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             
             # *Fixation_Point* updates
             
+            #FIXATION CROSS REMAINS ON THE SCREEN (02/24/2025 VBG)
             # if Fixation_Point is starting this frame...
             if Fixation_Point.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
                 # keep track of start time/frame for later
@@ -572,11 +573,11 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             if Fixation_Point.status == STARTED:
                 # update params
                 pass
-            
+                
             # if Fixation_Point is stopping this frame...
             if Fixation_Point.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 1.0-frameTolerance:
+                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 3.5-frameTolerance:
                     # keep track of stop time/frame for later
                     Fixation_Point.tStop = t  # not accounting for scr refresh
                     Fixation_Point.tStopRefresh = tThisFlipGlobal  # on global time
@@ -586,6 +587,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     # update status
                     Fixation_Point.status = FINISHED
                     Fixation_Point.setAutoDraw(False)
+         
             
             # *Cue* updates
             
@@ -610,7 +612,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Cue is stopping this frame...
             if Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Cue.tStartRefresh + 0.2-frameTolerance:
+                if tThisFlipGlobal > Cue.tStartRefresh + 0.15-frameTolerance:
                     # keep track of stop time/frame for later
                     Cue.tStop = t  # not accounting for scr refresh
                     Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -624,7 +626,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # *Gabor* updates
             
             # if Gabor is starting this frame...
-            if Gabor.status == NOT_STARTED and tThisFlip >= 1.65-frameTolerance:
+            if Gabor.status == NOT_STARTED and tThisFlip >= 1.50-frameTolerance:
                 # keep track of start time/frame for later
                 Gabor.frameNStart = frameN  # exact frame index
                 Gabor.tStart = t  # local t and not account for scr refresh
@@ -659,7 +661,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             waitOnFlip = False
             
             # if key_resp is starting this frame...
-            if key_resp.status == NOT_STARTED and tThisFlip >= 2.65-frameTolerance:
+            if key_resp.status == NOT_STARTED and tThisFlip >= 1.50-frameTolerance:
                 # keep track of start time/frame for later
                 key_resp.frameNStart = frameN  # exact frame index
                 key_resp.tStart = t  # local t and not account for scr refresh
@@ -673,8 +675,24 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 waitOnFlip = True
                 win.callOnFlip(key_resp.clock.reset)  # t=0 on next screen flip
                 win.callOnFlip(key_resp.clearEvents, eventType='keyboard')  # clear events on next screen flip
+                
+                ####START
+            if key_resp.status == STARTED:
+                # is it time to stop? (based on global clock, using actual start)
+                if tThisFlipGlobal > key_resp.tStartRefresh + 3.5-frameTolerance:
+                    # keep track of stop time/frame for later
+                    key_resp.tStop = t  # not accounting for scr refresh
+                    key_resp.tStopRefresh = tThisFlipGlobal  # on global time
+                    key_resp.frameNStop = frameN  # exact frame index
+                    # add timestamp to datafile
+                    thisExp.timestampOnFlip(win, 'key_resp.stopped')
+                    # update status
+                    key_resp.status = FINISHED
+                    key_resp.status = FINISHED
+                    
+                    #######STOP
             if key_resp.status == STARTED and not waitOnFlip:
-                theseKeys = key_resp.getKeys(keyList=['u','s'], ignoreKeys=["escape"], waitRelease=False)
+                theseKeys = key_resp.getKeys(keyList=['1','2'], ignoreKeys=["escape"], waitRelease=False)
                 _key_resp_allKeys.extend(theseKeys)
                 if len(_key_resp_allKeys):
                     key_resp.keys = _key_resp_allKeys[-1].name  # just the last key pressed
@@ -683,26 +701,26 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     # a response ends the routine
                     continueRoutine = False
             
-            # *text* updates
-            
-            # if text is starting this frame...
-            if text.status == NOT_STARTED and tThisFlip >= 2.65-frameTolerance:
-                # keep track of start time/frame for later
-                text.frameNStart = frameN  # exact frame index
-                text.tStart = t  # local t and not account for scr refresh
-                text.tStartRefresh = tThisFlipGlobal  # on global time
-                win.timeOnFlip(text, 'tStartRefresh')  # time at next scr refresh
-                # add timestamp to datafile
-                thisExp.timestampOnFlip(win, 'text.started')
-                # update status
-                text.status = STARTED
-                text.setAutoDraw(True)
-            
-            # if text is active this frame...
-            if text.status == STARTED:
-                # update params
-                pass
-            
+#            # *text* updates
+#            
+#            # if text is starting this frame...
+#            if text.status == NOT_STARTED and tThisFlip >= 2.50-frameTolerance:
+#                # keep track of start time/frame for later
+#                text.frameNStart = frameN  # exact frame index
+#                text.tStart = t  # local t and not account for scr refresh
+#                text.tStartRefresh = tThisFlipGlobal  # on global time
+#                win.timeOnFlip(text, 'tStartRefresh')  # time at next scr refresh
+#                # add timestamp to datafile
+#                thisExp.timestampOnFlip(win, 'text.started')
+#                # update status
+#                text.status = STARTED
+#                text.setAutoDraw(True)
+#            
+#            # if text is active this frame...
+#            if text.status == STARTED:
+#                # update params
+#                pass
+#            
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
                 thisExp.status = FINISHED
@@ -735,6 +753,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('Gabor.pos', Gabor.pos)
         # Add orientation to the data file
         thisExp.addData('Gabor.ori', Gabor.ori)
+#        # Add threshold to the data file
+#        thisExp.addData('QP Threshold', threshold)
 
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
@@ -743,8 +763,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # Update QuestPlus with the outcome
             # After response is collected
             response = 1 if (
-                (key_resp.keys == 'u' and thisTrial_Rep['orientation'] == 0) or 
-                (key_resp.keys == 's' and thisTrial_Rep['orientation'] == 90)
+                (key_resp.keys == '1' and thisTrial_Rep['orientation'] == 0) or 
+                (key_resp.keys == '2' and thisTrial_Rep['orientation'] == 90)
             ) else 0
             current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
