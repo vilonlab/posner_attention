@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 This experiment was created using PsychoPy3 Experiment Builder (v2024.1.5),
@@ -45,7 +45,7 @@ param_domain = {
 outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
 # Initialize *FOUR* QuestPlus staircases - one for each orientation
-qp_matched = QuestPlus(
+qp_valid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -53,7 +53,7 @@ qp_matched = QuestPlus(
     stim_scale='log10'
 )
 
-qp_mismatched = QuestPlus(
+qp_invalid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -71,8 +71,8 @@ psychopyVersion = '2024.1.5'
 expName = 'ViLoN_Posner_Cueing'  # from the Builder filename that created this script
 # information about this experiment
 expInfo = {
-    'participant': f"{randint(0, 999999):06.0f}",
-    'session': '001',
+    'participant': '',
+    'session': '',
     'date|hid': data.getDateStr(),
     'expName|hid': expName,
     'psychopyVersion|hid': psychopyVersion,
@@ -88,7 +88,7 @@ or run the experiment with `--pilot` as an argument. To change what pilot
 PILOTING = core.setPilotModeFromArgs()
 # start off with values from experiment settings
 _fullScr = True
-_winSize = (1024, 768)
+_winSize = (1920, 1200)
 _loggingLevel = logging.getLevel('info')
 # if in pilot mode, apply overrides according to preferences
 if PILOTING:
@@ -213,7 +213,7 @@ def setupWindow(expInfo=None, win=None):
     if win is None:
         # if not given a window to setup, make one
         win = visual.Window(
-            size=_winSize, fullscr=_fullScr, screen=0,
+            size=_winSize, fullscr=_fullScr, screen=1,
             winType='pyglet', allowStencil=False,
             monitor='testMonitor', color=[0,0,0], colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
@@ -407,7 +407,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         opacity=None, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
-        tex='sin', mask='circle', anchor='center',
+        tex='sin', mask='gauss', anchor='center',
         ori=0.0, pos=[POSITION[0],POSITION[1]], size=[SIZE[0], SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=None, contrast=1.0, blendmode='avg',
@@ -499,19 +499,19 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # In the trial routine
         if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 0
-            current_qp = qp_matched
+            current_qp = qp_valid
 
         elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 0
-            current_qp = qp_mismatched
+            current_qp = qp_invalid
 
         elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 90
-            current_qp = qp_matched
+            current_qp = qp_valid
 
         elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 90
-            current_qp = qp_mismatched
+            current_qp = qp_invalid
 
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
