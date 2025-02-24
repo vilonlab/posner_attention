@@ -387,7 +387,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # Start Code - component code to be run after the window creation
 
     ### TDW hardcoded values
-    TRIAL_REPETITIONS = 3
+    TRIAL_REPETITIONS = 1
     SIZE = [1.5, 1.5]
     POSITION = np.array([8.0, 0.0])
     SPATIAL_FREQUENCY = 5
@@ -395,8 +395,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # --- Initialize components for Routine "MainInstruc" ---
     mainInst = visual.TextStim(win=win, name='mainInst',
         text='''Welcome to the Line Grate Game!\n\n\n In this game, you will see line grates like these:\n\n\n\n
-        Your job is to determine which way the lines are pointing!\n\nPress the left button if the lines are moving up and down, 
-        and the right button if the lines are moving side to side.''',
+        Your job is to determine which way the lines are pointing!\n\nPress the left button if the lines are pointing up and down, 
+        and the right button if the lines are pointing side to side.''',
         font='Arial',
         units='height', pos=(0, 0), draggable=False, height=0.04, wrapWidth=1700, ori=0, 
         color='black', colorSpace='rgb', opacity=1, 
@@ -895,7 +895,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 
             if key_resp.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > key_resp.tStartRefresh + 3.5-frameTolerance:
+                if tThisFlipGlobal > key_resp.tStartRefresh + 2.0-frameTolerance:
                     # keep track of stop time/frame for later
                     key_resp.tStop = t  # not accounting for scr refresh
                     key_resp.tStopRefresh = tThisFlipGlobal  # on global time
@@ -915,27 +915,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     key_resp.duration = _key_resp_allKeys[-1].duration
                     # a response ends the routine
                     continueRoutine = False
-            
-#            # *text* updates
-#            
-#            # if text is starting this frame...
-#            if text.status == NOT_STARTED and tThisFlip >= 2.50-frameTolerance:
-#                # keep track of start time/frame for later
-#                text.frameNStart = frameN  # exact frame index
-#                text.tStart = t  # local t and not account for scr refresh
-#                text.tStartRefresh = tThisFlipGlobal  # on global time
-#                win.timeOnFlip(text, 'tStartRefresh')  # time at next scr refresh
-#                # add timestamp to datafile
-#                thisExp.timestampOnFlip(win, 'text.started')
-#                # update status
-#                text.status = STARTED
-#                text.setAutoDraw(True)
-#            
-#            # if text is active this frame...
-#            if text.status == STARTED:
-#                # update params
-#                pass
-#            
+                
             # check for quit (typically the Esc key)
             if defaultKeyboard.getKeys(keyList=["escape"]):
                 thisExp.status = FINISHED
