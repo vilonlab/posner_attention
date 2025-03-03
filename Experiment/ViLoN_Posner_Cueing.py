@@ -44,7 +44,7 @@ param_domain = {
 }
 outcome_domain = {'response': [1, 0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-# Initialize *TWO* QuestPlus staircases - one for each condition
+# Initialize *THREE* QuestPlus staircases - one for each condition 02/24/2025 VBG
 qp_valid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
@@ -54,6 +54,14 @@ qp_valid = QuestPlus(
 )
 
 qp_invalid = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='log10'
+)
+
+qp_neutral = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -387,9 +395,10 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # Start Code - component code to be run after the window creation
 
     ### TDW hardcoded values
-    TRIAL_REPETITIONS = 1
+    TRIAL_REPETITIONS = 1 # How many times to present each of the 12 unique trial types (e.g. total # of trials = 12 * TRIAL_REPETITIONS)
     SIZE = [1.5, 1.5]
-    POSITION = np.array([8.0, 0.0])
+    RIGHT_POSITION = np.array([8.0, 0.0])
+    LEFT_POSITION = np.array([-8.0, 0.0])
     SPATIAL_FREQUENCY = 5
     
     # --- Initialize components for Routine "MainInstruc" ---
@@ -425,27 +434,26 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         ori=0.0, pos=(0, 0), anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=None, depth=0.0, interpolate=True)
-    Cue = visual.ShapeStim(
-        win=win, name='Cue',units='deg', 
+    Left_Cue = visual.ShapeStim(
+        win=win, name='Left_Cue',units='deg', 
         size=[SIZE[0], SIZE[1]], vertices='circle',
-        ori=0.0, pos=[POSITION[0], POSITION[1]], anchor='center',
+        ori=0.0, pos=LEFT_POSITION, anchor='center',
+        lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
+        opacity=None, depth=-1.0, interpolate=True)
+    Right_Cue = visual.ShapeStim(
+        win=win, name='Left_Cue',units='deg', 
+        size=[SIZE[0], SIZE[1]], vertices='circle',
+        ori=0.0, pos=RIGHT_POSITION, anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=None, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
         tex='sin', mask='gauss', anchor='center',
-        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[SIZE[0], SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
+        ori=0.0, pos=RIGHT_POSITION, size=SIZE, sf=SPATIAL_FREQUENCY, phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=None, contrast=1.0, blendmode='avg',
         texRes=128.0, interpolate=True, depth=-2.0)
     key_resp = keyboard.Keyboard(deviceName='key_resp')
-#    text = visual.TextStim(win=win, name='text',
-#        text="",
-#        font='Arial',
-#        pos=(0, 0), height=0.05, wrapWidth=None, ori=0.0, 
-#        color='white', colorSpace='rgb', opacity=None, 
-#        languageStyle='LTR',
-#        depth=-4.0)
 
     # --- Initialize components for Routine "End" ---
     endText = visual.TextStim(win=win, name='endText',
@@ -668,9 +676,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     # set up handler to look after randomisation of conditions etc
     trialList = data.createFactorialTrialList({
-                'orientation': [0, 90],
-                'cue_position': [-1, 1], # -1 = Left, 1 = Right
-                'gabor_position_match': [True, False]  
+                'orientation': [0, 90], # 0 - vertical, 90 - horizontal
+                'cue_position': [LEFT, RIGHT, BOTH],
+                'gabor_position_match': [True, False] # True - valid cue, False - invalid cue 
                 })
     Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
         extraInfo=expInfo, originPath=-1,
@@ -685,17 +693,33 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     
     for thisTrial_Rep in Trial_Rep:
         currentLoop = Trial_Rep
-
-        # Calculate positions using numpy arrays
-        CUE_POSITION = np.array([POSITION[0] * thisTrial_Rep['cue_position'], POSITION[1]])
         
-        if thisTrial_Rep['gabor_position_match']:
-            GABOR_POSITION = np.array([POSITION[0] * thisTrial_Rep['cue_position'], POSITION[1]])
-        else:
-            GABOR_POSITION = np.array([POSITION[0] * -thisTrial_Rep['cue_position'], POSITION[1]])
+        #Determine cue positions based on condition
+        if thisTrial_Rep['cue_position'] == "BOTH": # Neutral condition - Cue on both sides of fixation cross
+            RIGHT_CUE_OPACITY = 1.0
+            LEFT_CUE_OPACITY = 1.0
+            if thisTrial_Rep['gabor_position_match']: # Half of the Gabors will be on the left, half on the right
+                GABOR_POSITION = RIGHT_POSITION
+            else:
+                GABOR_POSITION = LEFT_POSITION
+        elif thisTrial_Rep['cue_position'] == "LEFT":
+            LEFT_CUE_OPACITY = 1.0
+            RIGHT_CUE_OPACITY = 0.0
+            if thisTrial_Rep['gabor_position_match']: # Valid left cue
+                GABOR_POSITION = LEFT_POSITION
+            else: # Invalid left cue
+                GABOR_POSITION = RIGHT_POSITION
+        elif thisTrial_Rep['cue_position'] == "RIGHT":
+            LEFT_CUE_OPACITY = 0.0
+            RIGHT_CUE_OPACITY = 1.0
+            if thisTrial_Rep['gabor_position_match']: # Valid right cue
+                GABOR_POSITION = RIGHT_POSITION
+            else: # Invalid right cue
+                GABOR_POSITION = LEFT_POSITION
             
         # Update component positions
-        Cue.pos = CUE_POSITION
+        Left_Cue.opacity = LEFT_CUE_OPACITY
+        Right_Cue.opacity = RIGHT_CUE_OPACITY
         Gabor.pos = GABOR_POSITION
 
         thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
@@ -729,6 +753,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['gabor_position_match']:
             Gabor.ori = 90
             current_qp = qp_invalid
+        
+        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_position'] == "BOTH":
+            Gabor.ori = 0
+            current_qp = qp_neutral
+        
+        elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['cue_position'] == "BOTH":
+            Gabor.ori = 90
+            current_qp = qp_neutral
 
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
@@ -747,7 +779,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         key_resp.rt = []
         _key_resp_allKeys = []
         # keep track of which components have finished
-        trialComponents = [Fixation_Point, Cue, Gabor, key_resp]
+        trialComponents = [Fixation_Point, Left_Cue, Right_Cue, Gabor, key_resp]
         for thisComponent in trialComponents:
             thisComponent.tStart = None
             thisComponent.tStop = None
@@ -806,39 +838,73 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     Fixation_Point.setAutoDraw(False)
          
             
-            # *Cue* updates
+            # *Right_Cue* updates
             
-            # if Cue is starting this frame...
-            if Cue.status == NOT_STARTED and tThisFlip >= 1.0-frameTolerance:
+            # if Right_Cue is starting this frame...
+            if Right_Cue.status == NOT_STARTED and tThisFlip >= 1.0-frameTolerance:
                 # keep track of start time/frame for later
-                Cue.frameNStart = frameN  # exact frame index
-                Cue.tStart = t  # local t and not account for scr refresh
-                Cue.tStartRefresh = tThisFlipGlobal  # on global time
+                Right_Cue.frameNStart = frameN  # exact frame index
+                Right_Cue.tStart = t  # local t and not account for scr refresh
+                Right_Cue.tStartRefresh = tThisFlipGlobal  # on global time
                 win.timeOnFlip(Cue, 'tStartRefresh')  # time at next scr refresh
                 # add timestamp to datafile
-                thisExp.timestampOnFlip(win, 'Cue.started')
+                thisExp.timestampOnFlip(win, 'Right_Cue.started')
                 # update status
-                Cue.status = STARTED
-                Cue.setAutoDraw(True)
+                Right_Cue.status = STARTED
+                Right_Cue.setAutoDraw(True)
             
-            # if Cue is active this frame...
-            if Cue.status == STARTED:
+            # if Right_Cue is active this frame...
+            if Right_Cue.status == STARTED:
                 # update params
                 pass
             
-            # if Cue is stopping this frame...
-            if Cue.status == STARTED:
+            # if Right_Cue is stopping this frame...
+            if Right_Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Cue.tStartRefresh + 0.15-frameTolerance:
+                if tThisFlipGlobal > Right_Cue.tStartRefresh + 0.15-frameTolerance:
                     # keep track of stop time/frame for later
-                    Cue.tStop = t  # not accounting for scr refresh
-                    Cue.tStopRefresh = tThisFlipGlobal  # on global time
-                    Cue.frameNStop = frameN  # exact frame index
+                    Right_Cue.tStop = t  # not accounting for scr refresh
+                    Right_Cue.tStopRefresh = tThisFlipGlobal  # on global time
+                    Right_Cue.frameNStop = frameN  # exact frame index
                     # add timestamp to datafile
-                    thisExp.timestampOnFlip(win, 'Cue.stopped')
+                    thisExp.timestampOnFlip(win, 'Right_Cue.stopped')
                     # update status
-                    Cue.status = FINISHED
-                    Cue.setAutoDraw(False)
+                    Right_Cue.status = FINISHED
+                    Right_Cue.setAutoDraw(False)
+                    
+            # *Left_Cue* updates
+            
+            # if Left_Cue is starting this frame...
+            if Left_Cue.status == NOT_STARTED and tThisFlip >= 1.0-frameTolerance:
+                # keep track of start time/frame for later
+                Left_Cue.frameNStart = frameN  # exact frame index
+                Left_Cue.tStart = t  # local t and not account for scr refresh
+                Left_Cue.tStartRefresh = tThisFlipGlobal  # on global time
+                win.timeOnFlip(Cue, 'tStartRefresh')  # time at next scr refresh
+                # add timestamp to datafile
+                thisExp.timestampOnFlip(win, 'Left_Cue.started')
+                # update status
+                Left_Cue.status = STARTED
+                Left_Cue.setAutoDraw(True)
+            
+            # if Left_Cue is active this frame...
+            if Left_Cue.status == STARTED:
+                # update params
+                pass
+            
+            # if Left_Cue is stopping this frame...
+            if Left_Cue.status == STARTED:
+                # is it time to stop? (based on global clock, using actual start)
+                if tThisFlipGlobal > Right_Cue.tStartRefresh + 0.15-frameTolerance:
+                    # keep track of stop time/frame for later
+                    Left_Cue.tStop = t  # not accounting for scr refresh
+                    Left_Cue.tStopRefresh = tThisFlipGlobal  # on global time
+                    Left_Cue.frameNStop = frameN  # exact frame index
+                    # add timestamp to datafile
+                    thisExp.timestampOnFlip(win, 'Left_Cue.stopped')
+                    # update status
+                    Left_Cue.status = FINISHED
+                    Left_Cue.setAutoDraw(False)
             
             # *Gabor* updates
             
@@ -944,12 +1010,15 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('trial.stopped', globalClock.getTime(format='float'))
         # Add intensity to the data file
         thisExp.addData('Gabor.intensity', intensity)
+        # Add cue opacity to the data file
+        thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
+        thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
         # Add position to the data file
         thisExp.addData('Gabor.pos', Gabor.pos)
         # Add orientation to the data file
         thisExp.addData('Gabor.ori', Gabor.ori)
-#        # Add threshold to the data file
-#        thisExp.addData('QP Threshold', threshold)
+        # Add threshold to the data file
+        thisExp.addData('QP Threshold', threshold)
 
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
