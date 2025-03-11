@@ -61,13 +61,13 @@ qp_invalid = QuestPlus(
     stim_scale='log10'
 )
 
-#qp_neutral = QuestPlus(
-#    stim_domain=stim_domain,
-#    param_domain=param_domain,
-#    outcome_domain=outcome_domain,
-#    func='weibull',
-#    stim_scale='log10'
-#)
+qp_neutral = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='log10'
+)
 
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
@@ -395,7 +395,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
 
     ### TDW hardcoded values
     TRIAL_REPETITIONS = 1 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
-    SIZE = [1.5, 1.5]
+    CUE_SIZE = [1.5, 1.5]
+    TARGET_SIZE = [1, 1]
     POSITION = np.array([8.0, 0.0])
     SPATIAL_FREQUENCY = 5
     
@@ -428,26 +429,26 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # --- Initialize components for Routine "trial" ---
     Fixation_Point = visual.ShapeStim(
         win=win, name='Fixation_Point', vertices='cross',units='deg', 
-        size=(SIZE[0], SIZE[1]),
+        size=(TARGET_SIZE[0], TARGET_SIZE[1]),
         ori=0.0, pos=(0, 0), anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=1.0, depth=0.0, interpolate=True)
     Left_Cue = visual.ShapeStim(
         win=win, name='Left_Cue',units='deg', 
-        size=[SIZE[0], SIZE[1]], vertices='circle',
+        size=[CUE_SIZE[0], CUE_SIZE[1]], vertices='circle',
         ori=0.0, pos=[-POSITION[0], POSITION[1]], anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=1.0, depth=-1.0, interpolate=True)
     Right_Cue = visual.ShapeStim(
         win=win, name='Right_Cue',units='deg', 
-        size=[SIZE[0], SIZE[1]], vertices='circle',
+        size=[CUE_SIZE[0], CUE_SIZE[1]], vertices='circle',
         ori=0.0, pos=[POSITION[0], POSITION[1]], anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=1.0, depth=-1.0, interpolate=True)
     Gabor = visual.GratingStim(
         win=win, name='Gabor',units='deg', 
         tex='sin', mask='gauss', anchor='center',
-        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[SIZE[0], SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
+        ori=0.0, pos=[POSITION[0],POSITION[1]], size=[TARGET_SIZE[0], TARGET_SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=1.0, contrast=1.0, blendmode='avg',
         texRes=128.0, interpolate=True, depth=-2.0)
@@ -751,19 +752,23 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             Gabor.ori = 90
             current_qp = qp_invalid
             
-#        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
-#            Gabor.ori = 0
-#            current_qp = qp_neutral
-#
-#        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
-#            Gabor.ori = 90
-#            current_qp = qp_neutral    
-            
+        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
+            Gabor.ori = 0
+            current_qp = qp_neutral
+
+        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
+            Gabor.ori = 90
+            current_qp = qp_neutral    
+        
+        # Save threshold, slope, and lapse rate
+        threshold = current_qp.param_estimate['threshold']
+        slope = current_qp.param_estimate['slope']
+        lapse_rate = current_qp.param_estimate['lapse_rate']
 
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
         intensity = next_stim['intensity']
-        print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}")
+        print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}, Cue condition: {thisTrial_Rep['cue_condition']}")
         
         # Update Gabor contrast
         Gabor.contrast = intensity
@@ -1012,8 +1017,10 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('Gabor.pos', Gabor.pos)
         # Add orientation to the data file
         thisExp.addData('Gabor.ori', Gabor.ori)
-#        # Add threshold to the data file
-#        thisExp.addData('QP Threshold', threshold)
+        # Add threshold, slope, and lapse rate to the data file
+        thisExp.addData('QP_Threshold', threshold)
+        thisExp.addData('QP_Slope', slope)
+        thisExp.addData('QP_Lapse', lapse_rate)
         # Add opacity of each cue to the data file
         thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
         thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
