@@ -54,21 +54,21 @@ qp_valid = QuestPlus(
     stim_scale='linear'
 )
 
-#qp_invalid = QuestPlus(
-#    stim_domain=stim_domain,
-#    param_domain=param_domain,
-#    outcome_domain=outcome_domain,
-#    func='weibull',
-#    stim_scale='log10'
-#)
-#
-#qp_neutral = QuestPlus(
-#    stim_domain=stim_domain,
-#    param_domain=param_domain,
-#    outcome_domain=outcome_domain,
-#    func='weibull',
-#    stim_scale='log10'
-#)
+qp_invalid = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='linear'
+)
+
+qp_neutral = QuestPlus(
+    stim_domain=stim_domain,
+    param_domain=param_domain,
+    outcome_domain=outcome_domain,
+    func='weibull',
+    stim_scale='linear'
+)
 
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
@@ -396,9 +396,10 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
 
     ### TDW hardcoded values
     TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
-    CUE_SIZE = [1, 1]
+    CUE_SIZE = [.5, .5]
     TARGET_SIZE = [1.5, 1.5]
-    POSITION = np.array([8.0, 0.0])
+    FIXATION_SIZE = [.5, .5]
+    POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity 
     SPATIAL_FREQUENCY = 5
     
     # --- Initialize components for Routine "MainInstruc" ---
@@ -430,7 +431,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # --- Initialize components for Routine "trial" ---
     Fixation_Point = visual.ShapeStim(
         win=win, name='Fixation_Point', vertices='cross',units='deg', 
-        size=(TARGET_SIZE[0], TARGET_SIZE[1]),
+        size=(FIXATION_SIZE[0], FIXATION_SIZE[1]),
         ori=0.0, pos=(0, 0), anchor='center',
         lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
         opacity=1.0, depth=0.0, interpolate=True)
@@ -680,7 +681,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     trialList = data.createFactorialTrialList({
                 'orientation': [0, 90], # 0 - vertical; 90 - horizontal
                 'gabor_position': [-1, 1], # -1 = Left, 1 = Right
-                'cue_condition': ['Valid']  
+                'cue_condition': ['Neutral', 'Invalid','Valid']  
                 }) 
     Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
         extraInfo=expInfo, originPath=-1,
@@ -741,25 +742,25 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             Gabor.ori = 0
             current_qp = qp_valid
 
-#        elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['cue_condition'] == 'Invalid':
-#            Gabor.ori = 0
-#            current_qp = qp_invalid
+        elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['cue_condition'] == 'Invalid':
+            Gabor.ori = 0
+            current_qp = qp_invalid
 
         elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['cue_condition'] == 'Valid':
             Gabor.ori = 90
             current_qp = qp_valid
 
-#        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Invalid':
-#            Gabor.ori = 90
-#            current_qp = qp_invalid
+        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Invalid':
+            Gabor.ori = 90
+            current_qp = qp_invalid
             
-#        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
-#            Gabor.ori = 0
-#            current_qp = qp_neutral
-#
-#        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
-#            Gabor.ori = 90
-#            current_qp = qp_neutral    
+        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
+            Gabor.ori = 0
+            current_qp = qp_neutral
+
+        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
+            Gabor.ori = 90
+            current_qp = qp_neutral    
         
         # Save threshold, slope, and lapse rate
         threshold = current_qp.param_estimate['threshold']
@@ -830,7 +831,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Fixation_Point is stopping this frame...
             if Fixation_Point.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 3.5-frameTolerance:
+                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 3.15-frameTolerance:
                     # keep track of stop time/frame for later
                     Fixation_Point.tStop = t  # not accounting for scr refresh
                     Fixation_Point.tStopRefresh = tThisFlipGlobal  # on global time
@@ -865,7 +866,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Left_Cue is stopping this frame...
             if Left_Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Left_Cue.tStartRefresh + 0.15-frameTolerance:
+                if tThisFlipGlobal > Left_Cue.tStartRefresh + 0.05-frameTolerance:
                     # keep track of stop time/frame for later
                     Left_Cue.tStop = t  # not accounting for scr refresh
                     Left_Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -899,7 +900,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Right_Cue is stopping this frame...
             if Right_Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Right_Cue.tStartRefresh + 0.15-frameTolerance:
+                if tThisFlipGlobal > Right_Cue.tStartRefresh + 0.05-frameTolerance:
                     # keep track of stop time/frame for later
                     Right_Cue.tStop = t  # not accounting for scr refresh
                     Right_Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -913,7 +914,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # *Gabor* updates
             
             # if Gabor is starting this frame...
-            if Gabor.status == NOT_STARTED and tThisFlip >= 1.50-frameTolerance:
+            if Gabor.status == NOT_STARTED and tThisFlip >= 1.15-frameTolerance:
                 # keep track of start time/frame for later
                 Gabor.frameNStart = frameN  # exact frame index
                 Gabor.tStart = t  # local t and not account for scr refresh
@@ -948,7 +949,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             waitOnFlip = False
             
             # if key_resp is starting this frame...
-            if key_resp.status == NOT_STARTED and tThisFlip >= 1.50-frameTolerance:
+            if key_resp.status == NOT_STARTED and tThisFlip >= 1.15-frameTolerance:
                 # keep track of start time/frame for later
                 key_resp.frameNStart = frameN  # exact frame index
                 key_resp.tStart = t  # local t and not account for scr refresh
