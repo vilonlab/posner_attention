@@ -36,12 +36,12 @@ from psychopy.hardware import keyboard
 from questplus import QuestPlus
 
 # Initialize QuestPlus
-stim_domain = {'intensity': np.arange(0.05, 2, 0.05)}
+stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
 param_domain = {
-    'threshold': np.arange(0.05, 2, 0.05),
+    'threshold': np.arange(0.01, 1, 0.01),
     'slope': np.arange(2, 5, 1),
     'lower_asymptote': 0.5, # Equal to chance
-    'lapse_rate': np.arange(0, 0.05, 0.01) 
+    'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
@@ -51,7 +51,7 @@ qp_valid = QuestPlus(
     param_domain=param_domain,
     outcome_domain=outcome_domain,
     func='weibull',
-    stim_scale='log10'
+    stim_scale='linear'
 )
 
 #qp_invalid = QuestPlus(
