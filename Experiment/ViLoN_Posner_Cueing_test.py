@@ -35,7 +35,8 @@ from psychopy.hardware import keyboard
 
 from questplus import QuestPlus
 
-# Initialize QuestPlus
+####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
+
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
 param_domain = {
     'threshold': np.arange(0.01, 1, 0.01),
@@ -45,7 +46,7 @@ param_domain = {
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-# Initialize *THREE* QuestPlus staircases - one for each condition
+# *THREE* QuestPlus staircases - one for each condition
 qp_valid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
@@ -69,6 +70,25 @@ qp_neutral = QuestPlus(
     func='weibull',
     stim_scale='linear'
 )
+
+####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
+
+TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
+CUE_SIZE = [.5, .5]
+TARGET_SIZE = [1.5, 1.5]
+FIXATION_SIZE = [.5, .5]
+POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity 
+SPATIAL_FREQUENCY = 5
+
+# Timing
+ITI = 1.0 # fixation point between trials (s)
+CUE_DURATION = 0.05 # (s)
+ISI = 0.1 # fixation point between cue and target (s)
+TARGET_DURATION = 1.0 # (s)
+RESPONSE_DURATION = 1.0 # total response window is TARGET_DURATION + RESPONSE_DURATION (s)
+TOTAL_TRIAL_DURATION = ITI + CUE_DURATION + ISI + TARGET_DURATION + RESPONSE_DURATION
+
+####### PSYCHOPY SETUP ####################################################################################################################################################################################################
 
 # --- Setup global variables (available in all functions) ---
 # create a device manager to handle hardware (keyboards, mice, mirophones, speakers, etc.)
@@ -392,16 +412,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     else:
         frameDur = 1.0 / 60.0  # could not measure, so guess
     
-    # Start Code - component code to be run after the window creation
-
-    ### TDW hardcoded values
-    TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
-    CUE_SIZE = [.5, .5]
-    TARGET_SIZE = [1.5, 1.5]
-    FIXATION_SIZE = [.5, .5]
-    POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity 
-    SPATIAL_FREQUENCY = 5
-    
     # --- Initialize components for Routine "MainInstruc" ---
     mainInst = visual.TextStim(win=win, name='mainInst',
         text='''Welcome to the Line Grate Game!\n\n\n In this game, you will see line grates like these:\n\n\n\n
@@ -675,21 +685,23 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # the Routine "MainInstruc" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset()
     
-    # EXPERIMENT TRIAL SETUP 
+####### TRIAL SETUP #################################################################################################################################################################################################### 
     
-    # set up handler to look after randomisation of conditions etc
+    # Create a dictionary of trial conditions  
     trialList = data.createFactorialTrialList({
                 'orientation': [0, 90], # 0 - vertical; 90 - horizontal
                 'gabor_position': [-1, 1], # -1 = Left, 1 = Right
                 'cue_condition': ['Neutral', 'Invalid','Valid']  
                 }) 
+    # Create list of all trials by multiplying above list by TRIAL_REPETITIONS and randomizing the order
     Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
         extraInfo=expInfo, originPath=-1,
         trialList=trialList,  # Using our conditions defined above
         seed=None, name='Trial_Rep')
     thisExp.addLoop(Trial_Rep)  # add the loop to the experiment
-    thisTrial_Rep = Trial_Rep.trialList[0]  # so we can initialise stimuli with some values
-    # abbreviate parameter names if possible (e.g. rgb = thisTrial_Rep.rgb)
+    thisTrial_Rep = Trial_Rep.trialList[0] 
+    current_trial = Trial_Rep.thisTrial # dictionary giving the parameters of the current trial
+    
     if thisTrial_Rep != None:
         for paramName in thisTrial_Rep:
             globals()[paramName] = thisTrial_Rep[paramName]
@@ -697,9 +709,12 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     for thisTrial_Rep in Trial_Rep:
         currentLoop = Trial_Rep
         
+        # Running each trial
+        
         # Calculate the position of the Gabor target
         Gabor.pos = np.array([POSITION[0] * thisTrial_Rep['gabor_position'], POSITION[1]])
         
+        # Change opacity of the left/right cues based on trial condition and target location
         if thisTrial_Rep['cue_condition'] == 'Neutral':
             LEFT_CUE_OPACITY = 1.0
             RIGHT_CUE_OPACITY = 1.0
@@ -722,7 +737,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         Left_Cue.opacity = LEFT_CUE_OPACITY
         Right_Cue.opacity = RIGHT_CUE_OPACITY
 
-        thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
+#        thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
         # pause experiment here if requested
         if thisExp.status == PAUSED:
             pauseExperiment(
@@ -736,8 +751,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             for paramName in thisTrial_Rep:
                 globals()[paramName] = thisTrial_Rep[paramName]
         
-
-        # In the trial routine
+        # Set Gabor orientation and assign trial to corresponding QP algorithm
         if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Valid':
             Gabor.ori = 0
             current_qp = qp_valid
@@ -762,7 +776,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             Gabor.ori = 90
             current_qp = qp_neutral    
         
-        # Save threshold, slope, and lapse rate
+        # Save threshold, slope, and lapse rate from QP to data file
         threshold = current_qp.param_estimate['threshold']
         slope = current_qp.param_estimate['slope']
         lapse_rate = current_qp.param_estimate['lapse_rate']
@@ -775,6 +789,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # Update Gabor contrast
         Gabor.contrast = intensity
         
+####### PSYCHOPY RUNS TRIAL ####################################################################################################################################################################################################
+
         # --- Prepare to start Routine "trial" ---
         continueRoutine = True
         # update component parameters for each repeat
@@ -812,6 +828,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             #FIXATION CROSS REMAINS ON THE SCREEN THROUGHOUT TRIAL (02/24/2025 VBG)
             # if Fixation_Point is starting this frame...
             if Fixation_Point.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
+                Fixation_Point.color = 'white'
                 # keep track of start time/frame for later
                 Fixation_Point.frameNStart = frameN  # exact frame index
                 Fixation_Point.tStart = t  # local t and not account for scr refresh
@@ -831,7 +848,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Fixation_Point is stopping this frame...
             if Fixation_Point.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Fixation_Point.tStartRefresh + 3.15-frameTolerance:
+                if tThisFlipGlobal > Fixation_Point.tStartRefresh + TOTAL_TRIAL_DURATION-frameTolerance:
                     # keep track of stop time/frame for later
                     Fixation_Point.tStop = t  # not accounting for scr refresh
                     Fixation_Point.tStopRefresh = tThisFlipGlobal  # on global time
@@ -846,7 +863,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # *Left_Cue* updates
             
             # if Left_Cue is starting this frame...
-            if Left_Cue.status == NOT_STARTED and tThisFlip >= 1.0-frameTolerance:
+            if Left_Cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
                 # keep track of start time/frame for later
                 Left_Cue.frameNStart = frameN  # exact frame index
                 Left_Cue.tStart = t  # local t and not account for scr refresh
@@ -866,7 +883,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Left_Cue is stopping this frame...
             if Left_Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Left_Cue.tStartRefresh + 0.05-frameTolerance:
+                if tThisFlipGlobal > Left_Cue.tStartRefresh + CUE_DURATION-frameTolerance:
                     # keep track of stop time/frame for later
                     Left_Cue.tStop = t  # not accounting for scr refresh
                     Left_Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -880,7 +897,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # *Right_Cue* updates
             
             # if Right_Cue is starting this frame...
-            if Right_Cue.status == NOT_STARTED and tThisFlip >= 1.0-frameTolerance:
+            if Right_Cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
                 # keep track of start time/frame for later
                 Right_Cue.frameNStart = frameN  # exact frame index
                 Right_Cue.tStart = t  # local t and not account for scr refresh
@@ -900,7 +917,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Right_Cue is stopping this frame...
             if Right_Cue.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Right_Cue.tStartRefresh + 0.05-frameTolerance:
+                if tThisFlipGlobal > Right_Cue.tStartRefresh + CUE_DURATION-frameTolerance:
                     # keep track of stop time/frame for later
                     Right_Cue.tStop = t  # not accounting for scr refresh
                     Right_Cue.tStopRefresh = tThisFlipGlobal  # on global time
@@ -914,7 +931,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # *Gabor* updates
             
             # if Gabor is starting this frame...
-            if Gabor.status == NOT_STARTED and tThisFlip >= 1.15-frameTolerance:
+            if Gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
+                Fixation_Point.color = 'blue'
                 # keep track of start time/frame for later
                 Gabor.frameNStart = frameN  # exact frame index
                 Gabor.tStart = t  # local t and not account for scr refresh
@@ -934,7 +952,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if Gabor is stopping this frame...
             if Gabor.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > Gabor.tStartRefresh + 1.0-frameTolerance:
+                if tThisFlipGlobal > Gabor.tStartRefresh + TARGET_DURATION-frameTolerance:
                     # keep track of stop time/frame for later
                     Gabor.tStop = t  # not accounting for scr refresh
                     Gabor.tStopRefresh = tThisFlipGlobal  # on global time
@@ -949,7 +967,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             waitOnFlip = False
             
             # if key_resp is starting this frame...
-            if key_resp.status == NOT_STARTED and tThisFlip >= 1.15-frameTolerance:
+            if key_resp.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
                 # keep track of start time/frame for later
                 key_resp.frameNStart = frameN  # exact frame index
                 key_resp.tStart = t  # local t and not account for scr refresh
@@ -966,7 +984,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 
             if key_resp.status == STARTED:
                 # is it time to stop? (based on global clock, using actual start)
-                if tThisFlipGlobal > key_resp.tStartRefresh + 2.0-frameTolerance:
+                if tThisFlipGlobal > key_resp.tStartRefresh + (TARGET_DURATION+RESPONSE_DURATION)-frameTolerance:
                     # keep track of stop time/frame for later
                     key_resp.tStop = t  # not accounting for scr refresh
                     key_resp.tStopRefresh = tThisFlipGlobal  # on global time
@@ -1012,6 +1030,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         for thisComponent in trialComponents:
             if hasattr(thisComponent, "setAutoDraw"):
                 thisComponent.setAutoDraw(False)
+
+####### SAVING VARIABLES TO DATA FILE #################################################################################################################################################################################################### 
         
         thisExp.addData('trial.stopped', globalClock.getTime(format='float'))
         # Add intensity to the data file
@@ -1028,23 +1048,26 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
         thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
 
+####### RESPONSE CHECK #################################################################################################################################################################################################### 
+
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
+            Trial_Rep.append(current_trial) # Trials with no response will be presented again at the end of experiment
         else:
             # Update QuestPlus with the outcome
             # After response is collected
-            response = 1 if ( # changed from 1
+            response = 1 if (
                 (key_resp.keys == '1' and thisTrial_Rep['orientation'] == 0) or 
                 (key_resp.keys == '2' and thisTrial_Rep['orientation'] == 90)
-                ) else 0 # changed from 0
-            
-            current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
+                ) else 0 
+            current_qp.update(stim={'intensity': intensity}, outcome={'response': response}) #QP is not updated if no response is made
         
+        # Save response key and accuracy to data file
         Trial_Rep.addData('Accuracy', response)
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
         
-        if key_resp.keys != None:  # we had a response
+        if key_resp.keys != None: 
             Trial_Rep.addData('key_resp.rt', key_resp.rt)
             Trial_Rep.addData('key_resp.duration', key_resp.duration)
         
@@ -1058,7 +1081,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # if running in a Session with a Liaison client, send data up to now
             thisSession.sendExperimentData()
     # completed X repeats of 'Trial_Rep'
-    
+
+####### PSYCHOPY ENDING EXPERIMENT AND SAVING FILE #################################################################################################################################################################################################### 
+
     # --- Prepare to start Routine "End" ---
     # create an object to store info about Routine End
     End = data.Routine(
