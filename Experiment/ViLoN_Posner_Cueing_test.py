@@ -79,6 +79,7 @@ TARGET_SIZE = [1.5, 1.5]
 FIXATION_SIZE = [.5, .5]
 POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity 
 SPATIAL_FREQUENCY = 5
+REPEAT_TRIALS = [] # Initialize list of trials with no response to be presented at the end of the experiment
 
 # Timing
 ITI = 1.0 # fixation point between trials (s)
@@ -684,7 +685,69 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     thisExp.nextEntry()
     # the Routine "MainInstruc" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset()
+
+####### TRIAL FUNCTIONS #################################################################################################################################################################################################### 
+# 3/18/2025 VBG: Defining trial functions to make it easier to implement repeat trial code
+
+def update_cue_opacities(trial):
+    # Change opacity of the left/right cues based on trial condition and target location
+    if trial['cue_condition'] == 'Neutral':
+        LEFT_CUE_OPACITY = 1.0
+        RIGHT_CUE_OPACITY = 1.0
+    elif trial['cue_condition'] == 'Valid':
+        if thisTrial_Rep['gabor_position'] == -1:
+            LEFT_CUE_OPACITY = 1.0
+            RIGHT_CUE_OPACITY = 0.0
+        else:
+            LEFT_CUE_OPACITY = 0.0
+            RIGHT_CUE_OPACITY = 1.0
+    elif trial['cue_condition'] == 'Invalid':
+        if thisTrial_Rep['gabor_position'] == 1:
+            LEFT_CUE_OPACITY = 1.0
+            RIGHT_CUE_OPACITY = 0.0
+        else:
+            LEFT_CUE_OPACITY = 0.0
+            RIGHT_CUE_OPACITY = 1.0
+    return LEFT_CUE_OPACITY, RIGHT_CUE_OPACITY
     
+def gabor_handler(trial):
+    # Set Gabor orientation and assign trial to corresponding QP algorithm
+    if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Valid':
+        Gabor.ori = 0
+        current_qp = qp_valid
+
+    elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['cue_condition'] == 'Invalid':
+        Gabor.ori = 0
+        current_qp = qp_invalid
+
+    elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['cue_condition'] == 'Valid':
+        Gabor.ori = 90
+        current_qp = qp_valid
+
+    elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Invalid':
+        Gabor.ori = 90
+        current_qp = qp_invalid
+        
+    elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
+        Gabor.ori = 0
+        current_qp = qp_neutral
+
+    elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
+        Gabor.ori = 90
+        current_qp = qp_neutral    
+
+    # Save threshold, slope, and lapse rate from QP to data file
+    threshold = current_qp.param_estimate['threshold']
+    slope = current_qp.param_estimate['slope']
+    lapse_rate = current_qp.param_estimate['lapse_rate']
+
+    # Get next intensity from current staircase
+    next_stim = current_qp.next_stim
+    intensity = next_stim['intensity']
+    
+    return current_qp, intensity, threshold, slope, lapse_rate
+    
+
 ####### TRIAL SETUP #################################################################################################################################################################################################### 
     
     # Create a dictionary of trial conditions  
@@ -706,36 +769,16 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         for paramName in thisTrial_Rep:
             globals()[paramName] = thisTrial_Rep[paramName]
     
+    # Running each trial
     for thisTrial_Rep in Trial_Rep:
         currentLoop = Trial_Rep
-        
-        # Running each trial
         
         # Calculate the position of the Gabor target
         Gabor.pos = np.array([POSITION[0] * thisTrial_Rep['gabor_position'], POSITION[1]])
         
-        # Change opacity of the left/right cues based on trial condition and target location
-        if thisTrial_Rep['cue_condition'] == 'Neutral':
-            LEFT_CUE_OPACITY = 1.0
-            RIGHT_CUE_OPACITY = 1.0
-        elif thisTrial_Rep['cue_condition'] == 'Valid':
-            if thisTrial_Rep['gabor_position'] == -1:
-                LEFT_CUE_OPACITY = 1.0
-                RIGHT_CUE_OPACITY = 0.0
-            else:
-                LEFT_CUE_OPACITY = 0.0
-                RIGHT_CUE_OPACITY = 1.0
-        elif thisTrial_Rep['cue_condition'] == 'Invalid':
-            if thisTrial_Rep['gabor_position'] == 1:
-                LEFT_CUE_OPACITY = 1.0
-                RIGHT_CUE_OPACITY = 0.0
-            else:
-                LEFT_CUE_OPACITY = 0.0
-                RIGHT_CUE_OPACITY = 1.0
-                
         # Update cue opacities
-        Left_Cue.opacity = LEFT_CUE_OPACITY
-        Right_Cue.opacity = RIGHT_CUE_OPACITY
+        Left_Cue.opacity = update_cue_opacities(thisTrial_Rep)[0]
+        Right_Cue.opacity = update_cue_opacities(thisTrial_Rep)[1]
 
 #        thisExp.timestampOnFlip(win, 'thisRow.t', format=globalClock.format)
         # pause experiment here if requested
@@ -751,39 +794,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             for paramName in thisTrial_Rep:
                 globals()[paramName] = thisTrial_Rep[paramName]
         
-        # Set Gabor orientation and assign trial to corresponding QP algorithm
-        if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Valid':
-            Gabor.ori = 0
-            current_qp = qp_valid
-
-        elif thisTrial_Rep['orientation'] == 0 and not thisTrial_Rep['cue_condition'] == 'Invalid':
-            Gabor.ori = 0
-            current_qp = qp_invalid
-
-        elif thisTrial_Rep['orientation'] == 90 and thisTrial_Rep['cue_condition'] == 'Valid':
-            Gabor.ori = 90
-            current_qp = qp_valid
-
-        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Invalid':
-            Gabor.ori = 90
-            current_qp = qp_invalid
-            
-        elif thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Neutral':
-            Gabor.ori = 0
-            current_qp = qp_neutral
-
-        elif thisTrial_Rep['orientation'] == 90 and not thisTrial_Rep['cue_condition'] == 'Neutral':
-            Gabor.ori = 90
-            current_qp = qp_neutral    
+        current_qp, intensity, threshold, slope, lapse_rate = gabor_handler(thisTrial_Rep)
         
-        # Save threshold, slope, and lapse rate from QP to data file
-        threshold = current_qp.param_estimate['threshold']
-        slope = current_qp.param_estimate['slope']
-        lapse_rate = current_qp.param_estimate['lapse_rate']
-
-        # Get next intensity from current staircase
-        next_stim = current_qp.next_stim
-        intensity = next_stim['intensity']
         print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}, Cue condition: {thisTrial_Rep['cue_condition']}")
         
         # Update Gabor contrast
@@ -824,11 +836,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             # update/draw components on each frame
             
             # *Fixation_Point* updates
-            
-            #FIXATION CROSS REMAINS ON THE SCREEN THROUGHOUT TRIAL (02/24/2025 VBG)
             # if Fixation_Point is starting this frame...
             if Fixation_Point.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
-                Fixation_Point.color = 'white'
+                Fixation_Point.color = 'green'
                 # keep track of start time/frame for later
                 Fixation_Point.frameNStart = frameN  # exact frame index
                 Fixation_Point.tStart = t  # local t and not account for scr refresh
@@ -864,6 +874,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             
             # if Left_Cue is starting this frame...
             if Left_Cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
+                Fixation_Point.color = 'white'
                 # keep track of start time/frame for later
                 Left_Cue.frameNStart = frameN  # exact frame index
                 Left_Cue.tStart = t  # local t and not account for scr refresh
@@ -1053,7 +1064,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
-            Trial_Rep.append(current_trial) # Trials with no response will be presented again at the end of experiment
+            REPEAT_TRIALS.append(current_trial) # Trials with no response will be presented again at the end of experiment
         else:
             # Update QuestPlus with the outcome
             # After response is collected
@@ -1080,7 +1091,12 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if thisSession is not None:
             # if running in a Session with a Liaison client, send data up to now
             thisSession.sendExperimentData()
-    # completed X repeats of 'Trial_Rep'
+    
+    # End of trial list presentation
+    print('Trials to repeat:', len(REPEAT_TRIALS))
+    
+####### REPEATING TRIALS WITH NO RESPONSE #################################################################################################################################################################################################### 
+
 
 ####### PSYCHOPY ENDING EXPERIMENT AND SAVING FILE #################################################################################################################################################################################################### 
 
