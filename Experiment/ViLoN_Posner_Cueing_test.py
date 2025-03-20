@@ -1065,8 +1065,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             current_qp.update(stim={'intensity': intensity}, outcome={'response': response}) #QP is not updated if no response is made
         
         # Save response key and accuracy to data file
-        Trial_Rep.addData('Accuracy', response)
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
+        Trial_Rep.addData('Accuracy', response)
         
         if key_resp.keys != None: 
             Trial_Rep.addData('key_resp.rt', key_resp.rt)
