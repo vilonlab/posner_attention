@@ -35,6 +35,7 @@ from psychopy.hardware import keyboard
 
 from questplus import QuestPlus
 
+#####################################################################################################################################################################################################################################
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
@@ -71,6 +72,7 @@ qp_neutral = QuestPlus(
     stim_scale='linear'
 )
 
+#####################################################################################################################################################################################################################################
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
@@ -89,6 +91,7 @@ TARGET_DURATION = 1.0 # (s)
 RESPONSE_DURATION = 1.0 # total response window is TARGET_DURATION + RESPONSE_DURATION (s)
 TOTAL_TRIAL_DURATION = ITI + CUE_DURATION + ISI + TARGET_DURATION + RESPONSE_DURATION
 
+#####################################################################################################################################################################################################################################
 ####### PSYCHOPY SETUP ####################################################################################################################################################################################################
 
 # --- Setup global variables (available in all functions) ---
@@ -693,6 +696,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # the Routine "MainInstruc" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset()
 
+#####################################################################################################################################################################################################################################
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
     def get_cue_opacity(cue_condition, gabor_position):
@@ -709,6 +713,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             else:
                 return 0.0, 1.0
 
+#####################################################################################################################################################################################################################################
 ####### PRACTICE TRIALS #################################################################################################################################################################################################### 
     
     # Create a dictionary of trial conditions to be used in practice and experiment trials
@@ -721,7 +726,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     repeat_count = 0 # Keep track of how many times they have done the practice, max of 2
     repeat_practice = True
     while repeat_practice:
-        print("Repeat count at start of while loop: ", repeat_count)
         repeat_count += 1
         total_correct = 0
 
@@ -819,6 +823,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     
                 # if Fixation_Point is stopping this frame...
                 if Fixation_Point.status == STARTED:
+                    # Fixation point turns green for last 100 ms of ITI
+                    if tThisFlip >= 0.9-frameTolerance and tThisFlip < ITI-frameTolerance:
+                        Fixation_Point.color = 'green'
                     # is it time to stop? (based on global clock, using actual start)
                     if tThisFlipGlobal > Fixation_Point.tStartRefresh + TOTAL_TRIAL_DURATION-frameTolerance:
                         # keep track of stop time/frame for later
@@ -830,8 +837,15 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                         # update status
                         Fixation_Point.status = FINISHED
                         Fixation_Point.setAutoDraw(False)
-            
-                
+
+                # Fixation point turns white when cue appears (left and right cues appear at the same time, so only one needs to be checked)
+                if Left_Cue.status == STARTED: 
+                    Fixation_Point.color = 'white'  
+
+                # FP to blue when the target disappears
+                if Gabor.status == FINISHED:
+                    Fixation_Point.color = 'blue'   
+
                 # *Left_Cue* updates
                 
                 # if Left_Cue is starting this frame...
@@ -904,7 +918,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 
                 # if Gabor is starting this frame...
                 if Gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
-                    Fixation_Point.color = 'blue'
                     # keep track of start time/frame for later
                     Gabor.frameNStart = frameN  # exact frame index
                     Gabor.tStart = t  # local t and not account for scr refresh
@@ -965,7 +978,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                         thisExp.timestampOnFlip(win, 'key_resp.stopped')
                         # update status
                         key_resp.status = FINISHED
-                        key_resp.status = FINISHED
+                        key_resp.status = FINISHED    
                         
                 if key_resp.status == STARTED and not waitOnFlip:
                     theseKeys = key_resp.getKeys(keyList=['1','2'], ignoreKeys=["escape"], waitRelease=False)
@@ -1058,7 +1071,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # End of practice block
 
         # Calculate accuracy on practice trials, determine whether to continue, repeat, or end the experiment
-
         percent_correct = (total_correct / (len(Prac_Rep.trialList)*PRACTRIALS_REPETITIONS)) * 100
         print(f"Percent correct: {percent_correct}")
 
@@ -1076,7 +1088,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 retry_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
-                core.wait(0.5) # wait for 0.5 seconds before starting the experiment
+                core.wait(1) # wait for 0.5 seconds before starting the experiment
             else:
                 quit_text = visual.TextStim(win, text="You finished the game!", color="black", units='pix', height=40, wrapWidth=1700)
                 print("Participant did not pass practice trials.")
@@ -1084,7 +1096,8 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 win.flip()
                 event.waitKeys(keyList=['space'])
                 core.quit()
-    
+
+#####################################################################################################################################################################################################################################
 ####### EXPERIMENT TRIAL SETUP #################################################################################################################################################################################################### 
 
     # Create list of all trials by multiplying above list by TRIAL_REPETITIONS and randomizing the order
@@ -1094,15 +1107,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         seed=None, name='Trial_Rep')
     thisExp.addLoop(Trial_Rep)  # add the loop to the experiment
     thisTrial_Rep = Trial_Rep.trialList[0] 
-    current_trial = Trial_Rep.thisTrial # dictionary giving the parameters of the current trial
-    
+    no_resp_trials = []
+
     if thisTrial_Rep != None:
         for paramName in thisTrial_Rep:
             globals()[paramName] = thisTrial_Rep[paramName]
     
-    for thisTrial_Rep in Trial_Rep:
-        currentLoop = Trial_Rep
-        
+    for thisTrial_Rep in Trial_Rep:        
         # Running each trial
         
         # Calculate the position of the Gabor target
@@ -1161,7 +1172,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
         intensity = next_stim['intensity']
-        #print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}, Cue condition: {thisTrial_Rep['cue_condition']}")
+        print(f"Orientation: {thisTrial_Rep['orientation']}, Next Intensity: {intensity}, Cue condition: {thisTrial_Rep['cue_condition']}")
         
         # Update Gabor contrast
         Gabor.contrast = intensity
@@ -1224,6 +1235,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 
             # if Fixation_Point is stopping this frame...
             if Fixation_Point.status == STARTED:
+                # Fixation point turns green for last 100 ms of ITI
+                if tThisFlip >= 0.9-frameTolerance and tThisFlip < ITI-frameTolerance:
+                    Fixation_Point.color = 'green'
                 # is it time to stop? (based on global clock, using actual start)
                 if tThisFlipGlobal > Fixation_Point.tStartRefresh + TOTAL_TRIAL_DURATION-frameTolerance:
                     # keep track of stop time/frame for later
@@ -1236,6 +1250,13 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     Fixation_Point.status = FINISHED
                     Fixation_Point.setAutoDraw(False)
          
+            # Fixation point turns white when cue appears (left and right cues appear at the same time, so only one needs to be checked)
+            if Left_Cue.status == STARTED: 
+                Fixation_Point.color = 'white'  
+
+            # FP to blue when the target disappears
+            if Gabor.status == FINISHED:
+                Fixation_Point.color = 'blue' 
             
             # *Left_Cue* updates
             
@@ -1309,7 +1330,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             
             # if Gabor is starting this frame...
             if Gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
-                Fixation_Point.color = 'blue'
                 # keep track of start time/frame for later
                 Gabor.frameNStart = frameN  # exact frame index
                 Gabor.tStart = t  # local t and not account for scr refresh
@@ -1370,7 +1390,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     thisExp.timestampOnFlip(win, 'key_resp.stopped')
                     # update status
                     key_resp.status = FINISHED
-                    key_resp.status = FINISHED
+                    key_resp.status = FINISHED     
                     
             if key_resp.status == STARTED and not waitOnFlip:
                 theseKeys = key_resp.getKeys(keyList=['1','2'], ignoreKeys=["escape"], waitRelease=False)
@@ -1429,6 +1449,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if key_resp.keys in ['', [], None]:  # No response was made
             key_resp.keys = None
             response = None
+            no_resp_trials.append(thisTrial_Rep) # Add trial to list of trials with no response
         else:
             # Update QuestPlus with the outcome
             # After response is collected
@@ -1455,8 +1476,33 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         if thisSession is not None:
             # if running in a Session with a Liaison client, send data up to now
             thisSession.sendExperimentData()
-    # completed X repeats of 'Trial_Rep'
 
+        # Participant can take a break every 32 trials
+        if (Trial_Rep.thisN+1) % 32 == 0 and Trial_Rep.thisN != 191: 
+            break_text = visual.TextStim(win, text="Take a quick break!", color="black", units='pix', height=40, wrapWidth=1700)
+            break_text.draw()
+            win.flip()
+            event.waitKeys(keyList=['space'])
+            core.wait(1) 
+
+    # Completed all experiment trials
+
+#####################################################################################################################################################################################################################################
+####### REPEATING NO RESPONSE TRIALS ####################################################################################################################################################################################################    
+
+    if no_resp_trials:
+        print(f"Re-running {len(no_resp_trials)} trials with no response...")
+        for trial in no_resp_trials:
+            # Use the same trial parameters
+            Gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
+            Gabor.ori = trial['orientation']
+            Left_Cue.opacity, Right_Cue.opacity = get_cue_opacity(
+                cue_condition=trial['cue_condition'],
+                gabor_position=trial['gabor_position']
+            )
+
+
+#####################################################################################################################################################################################################################################
 ####### PSYCHOPY ENDING EXPERIMENT AND SAVING FILE #################################################################################################################################################################################################### 
 
     # --- Prepare to start Routine "End" ---
