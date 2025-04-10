@@ -35,7 +35,6 @@ from psychopy.hardware import keyboard
 
 from questplus import QuestPlus
 
-#####################################################################################################################################################################################################################################
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
@@ -72,7 +71,6 @@ qp_neutral = QuestPlus(
     stim_scale='linear'
 )
 
-#####################################################################################################################################################################################################################################
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial types ( Total # trials = TRIAL_REPEITIONS * 12)
@@ -91,7 +89,6 @@ TARGET_DURATION = 1.0 # (s)
 RESPONSE_DURATION = 1.0 # total response window is TARGET_DURATION + RESPONSE_DURATION (s)
 TOTAL_TRIAL_DURATION = ITI + CUE_DURATION + ISI + TARGET_DURATION + RESPONSE_DURATION
 
-#####################################################################################################################################################################################################################################
 ####### PSYCHOPY SETUP ####################################################################################################################################################################################################
 
 # --- Setup global variables (available in all functions) ---
@@ -696,60 +693,92 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
     # the Routine "MainInstruc" was not non-slip safe, so reset the non-slip timer
     routineTimer.reset()
 
-#####################################################################################################################################################################################################################################
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
+    # Determine the opacity (location) of the cue based on cue condition
     def get_cue_opacity(cue_condition, gabor_position):
-        if cue_condition == 'Neutral':
-            return 1.0, 1.0
-        elif cue_condition == 'Valid':
+        if cue_condition == 'Neutral': # show both cues
+            return 1.0, 1.0 
+        elif cue_condition == 'Valid': # show cue in same position as target gabor
             if gabor_position == -1:
-                return 1.0, 0.0
+                return 1.0, 0.0 
             else:
                 return 0.0, 1.0
-        elif cue_condition == 'Invalid':
+        elif cue_condition == 'Invalid': # show cue in opposite position as target gabor
             if gabor_position == 1:
                 return 1.0, 0.0
             else:
                 return 0.0, 1.0
 
-#####################################################################################################################################################################################################################################
-####### PRACTICE TRIALS #################################################################################################################################################################################################### 
+    # Get the list of trials from the TrialHandler
+    def get_trials(handler):
+        trial_sequence = handler.sequenceIndices # 2D array of the order in which trialList indices will be presented
+        trial_indices = trial_sequence.T.flatten().tolist() # Transpose and flatten the array to get a list of trial indices
+        trials = [handler.trialList[i] for i in trial_indices]  # Get the actual trial data from the handler
+        return trials
+
+    # Check that there are no more than 3 consecutive trials with the same cue condition
+    def consecutive_check(all_trials, max_repeats=3):
+        consecutive_count = 1
+        for i in range(1, len(all_trials)):
+            if all_trials[i]['cue_condition'] == all_trials[i - 1]['cue_condition']:
+                consecutive_count += 1
+                if consecutive_count > max_repeats:
+                    return False  # Invalid trial list
+            else:
+                consecutive_count = 1
+        return True  # Valid trial list
     
-    # Create a dictionary of trial conditions to be used in practice and experiment trials
+
+####### PRACTICE TRIAL SETUP #################################################################################################################################################################################################### 
+    
+    # Create a dictionary of 12 unique trial types used to create practice and experiment trial lists
     trialList = data.createFactorialTrialList({
                 'orientation': [0, 90], # 0 - vertical; 90 - horizontal
                 'gabor_position': [-1, 1], # -1 = Left, 1 = Right
                 'cue_condition': ['Neutral', 'Invalid','Valid']  
                 }) 
     
-    repeat_count = 0 # Keep track of how many times they have done the practice, max of 2
+    # While accuracy is below threshold, repeat practice block (2 max repetitions)
+    repeat_count = 0 
     repeat_practice = True
     while repeat_practice:
         repeat_count += 1
         total_correct = 0
 
-            # Create list of all trials by multiplying above list by TRIAL_REPETITIONS and randomizing the order
+        # Create initial list of practice trials
         Prac_Rep = data.TrialHandler(nReps=PRACTRIALS_REPETITIONS, method='random', 
             extraInfo=expInfo, originPath=-1,
             trialList=trialList,  # Using our conditions defined above
             seed=None, name='Prac_Rep')
-        thisExp.addLoop(Prac_Rep)  # add the loop to the experiment
+
+        # Check whether list of trials has no more than three of the same cue condition in a row, reshuffle until it meets this criteria
+        while consecutive_check(get_trials(Prac_Rep)) == False:
+            Prac_Rep = data.TrialHandler(nReps=PRACTRIALS_REPETITIONS, method='random', 
+            extraInfo=expInfo, originPath=-1,
+            trialList=trialList,
+            seed=None, name='Prac_Rep')
+
+        # print('Practice sequence:', Prac_Rep.sequenceIndices)
+        # print('Practice trial list:', get_trials(Prac_Rep))
+        
+        thisExp.addLoop(Prac_Rep)  # add the practice block to the experiment
         thisPrac_Rep = Prac_Rep.trialList[0] 
     
+        # abbreviate parameter names if possible (e.g. rgb = thisPrac_Rep.rgb)
         if thisPrac_Rep != None:
             for paramName in thisPrac_Rep:
                 globals()[paramName] = thisPrac_Rep[paramName]
 
         # Run practice trials
         for thisPrac_Rep in Prac_Rep:
-            
+
+            # Set trial visuals
             Gabor.pos = np.array([POSITION[0] * thisPrac_Rep['gabor_position'], POSITION[1]])
             Gabor.ori = thisPrac_Rep['orientation']
-
-            #print(f"cue_condition: {thisPrac_Rep['cue_condition']}, gabor_position: {thisPrac_Rep['gabor_position']}")
             Left_Cue.opacity, Right_Cue.opacity = get_cue_opacity(thisPrac_Rep['cue_condition'], thisPrac_Rep['gabor_position'])
 
+            # In practice trials, randomly set gabor contrast to 0.1, 0.5, or 1.0
             pract_contrasts = [0.1, 0.5, 1] * 4
             shuffle(pract_contrasts)
             intensity = pract_contrasts.pop(0)
@@ -763,11 +792,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     timers=[routineTimer], 
                     playbackComponents=[]
             )
-            # abbreviate parameter names if possible (e.g. rgb = thisPrac_Rep.rgb)
-            if thisPrac_Rep != None:
-                for paramName in thisPrac_Rep:
-                    globals()[paramName] = thisPrac_Rep[paramName]
 
+####### PSYCHOPY RUNS PRACTICE TRIALS ####################################################################################################################################################################################################
+  
                     # --- Prepare to start Routine "practice" ---
             continueRoutine = True
             # update component parameters for each repeat
@@ -1010,12 +1037,14 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 # refresh the screen
                 if continueRoutine:  # don't flip if this routine is over or we'll get a blank screen
                     win.flip()
-            
+
+            # End of Psychopy builder code that runs the practice block
             # --- Ending Routine "practice" ---
             for thisComponent in pracComponents:
                 if hasattr(thisComponent, "setAutoDraw"):
                     thisComponent.setAutoDraw(False)
             
+            # Save trial visuals to the data file
             thisExp.addData('practice.stopped', globalClock.getTime(format='float'))
             # Add intensity to the data file
             thisExp.addData('Gabor.intensity', intensity)
@@ -1027,9 +1056,9 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
             thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
 
-    ####### PRACTICE RESPONSE CHECK #################################################################################################################################################################################################### 
+####### PRACTICE TRIALS RESPONSE CHECK #################################################################################################################################################################################################### 
 
-            # check responses
+            # check responses and give feedback for each trial
             if key_resp.keys in ['', [], None]:  # No response was made
                 key_resp.keys = None
                 response = None
@@ -1052,11 +1081,12 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                     feedback.text = "Try Again!"
                     feedback.draw()
                     win.flip()
-                    core.wait(1)                     
-            # Save response key and accuracy to data file
+                    core.wait(1)         
+
+            # Save response, accuracy, RT, and duration to data file and print response
             Prac_Rep.addData('key_resp.keys',key_resp.keys)
             Prac_Rep.addData('Accuracy', response)
-            
+    
             if key_resp.keys != None: 
                 Prac_Rep.addData('key_resp.rt', key_resp.rt)
                 Prac_Rep.addData('key_resp.duration', key_resp.duration)
@@ -1070,56 +1100,65 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 thisSession.sendExperimentData()
         # End of practice block
 
-        # Calculate accuracy on practice trials, determine whether to continue, repeat, or end the experiment
+        # Calculate accuracy on practice trials, determine whether to continue to experiment block, repeat practice, or end the experiment
         percent_correct = (total_correct / (len(Prac_Rep.trialList)*PRACTRIALS_REPETITIONS)) * 100
         print(f"Percent correct: {percent_correct}")
 
-        if percent_correct >= 75:
+        if percent_correct >= 75: # Continue to experiment block
             start_text = visual.TextStim(win, text="Great Job!\n\nAre you ready to play the real game? ", color="black", units='pix', height=40, wrapWidth = 1700)
             print("Practice block passed! Starting experiment trials.")
             start_text.draw()
             win.flip()
             event.waitKeys(keyList=['space'])
             repeat_practice = False
+            core.wait(1)
         else:
-            if repeat_count < 2:
-                Prac_Rep.thisRepN +=1
+            if repeat_count < 2: # Repeat practice block
                 retry_text = visual.TextStim(win, text="Let's try the practice again!", color="black", units='pix', height=40, wrapWidth=1700)
                 retry_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
-                core.wait(1) # wait for 0.5 seconds before starting the experiment
-            else:
+                core.wait(1)
+            else: # End experiment
                 quit_text = visual.TextStim(win, text="You finished the game!", color="black", units='pix', height=40, wrapWidth=1700)
-                print("Participant did not pass practice trials.")
+                print("Participant did not pass practice trials. Ending experiment.")
                 quit_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
                 core.quit()
 
-#####################################################################################################################################################################################################################################
 ####### EXPERIMENT TRIAL SETUP #################################################################################################################################################################################################### 
 
-    # Create list of all trials by multiplying above list by TRIAL_REPETITIONS and randomizing the order
+    # Create initial list of experiment trials
     Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
         extraInfo=expInfo, originPath=-1,
         trialList=trialList,  # Using our conditions defined above
         seed=None, name='Trial_Rep')
-    thisExp.addLoop(Trial_Rep)  # add the loop to the experiment
-    thisTrial_Rep = Trial_Rep.trialList[0] 
-    no_resp_trials = []
 
+    while consecutive_check(get_trials(Trial_Rep)) == False:
+        print("Reshuffling experiment trials to avoid consecutive cue conditions.")
+        Trial_Rep = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
+        extraInfo=expInfo, originPath=-1,
+        trialList=trialList,  # Using our conditions defined above
+        seed=None, name='Trial_Rep')
+
+    # print("Experiment Sequence Indices:", Trial_Rep.sequenceIndices)
+    # print("Experiment Trial List:", get_trials(Trial_Rep))
+
+    thisExp.addLoop(Trial_Rep)  # add experiment block to the experiment
+    thisTrial_Rep = Trial_Rep.trialList[0] 
+    no_resp_trials = [] # inititate list of trials that participant did not respond to
+
+    # abbreviate parameter names if possible (e.g. rgb = thisPrac_Rep.rgb)
     if thisTrial_Rep != None:
         for paramName in thisTrial_Rep:
             globals()[paramName] = thisTrial_Rep[paramName]
     
+    # Run each experiment trial
     for thisTrial_Rep in Trial_Rep:        
-        # Running each trial
         
-        # Calculate the position of the Gabor target
+        # Set trial visuals
         Gabor.pos = np.array([POSITION[0] * thisTrial_Rep['gabor_position'], POSITION[1]])
-        
-        # Change opacity of the left/right cues based on trial condition and target location
         Left_Cue.opacity, Right_Cue.opacity = get_cue_opacity(
             cue_condition=thisTrial_Rep['cue_condition'],
             gabor_position=thisTrial_Rep['gabor_position']
@@ -1134,10 +1173,6 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 timers=[routineTimer], 
                 playbackComponents=[]
         )
-        # abbreviate parameter names if possible (e.g. rgb = thisTrial_Rep.rgb)
-        if thisTrial_Rep != None:
-            for paramName in thisTrial_Rep:
-                globals()[paramName] = thisTrial_Rep[paramName]
         
         # Set Gabor orientation and assign trial to corresponding QP algorithm
         if thisTrial_Rep['orientation'] == 0 and thisTrial_Rep['cue_condition'] == 'Valid':
@@ -1443,7 +1478,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
         thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
         thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
 
-####### EXPERIMENT RESPONSE CHECK #################################################################################################################################################################################################### 
+####### EXPERIMENT TRIALS RESPONSE CHECK #################################################################################################################################################################################################### 
 
         # check responses
         if key_resp.keys in ['', [], None]:  # No response was made
@@ -1451,18 +1486,16 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
             response = None
             no_resp_trials.append(thisTrial_Rep) # Add trial to list of trials with no response
         else:
-            # Update QuestPlus with the outcome
-            # After response is collected
+            # Update QuestPlus with trial accuracy; QP is not updated if no response is made
             response = 1 if (
                 (key_resp.keys == '1' and thisTrial_Rep['orientation'] == 0) or 
                 (key_resp.keys == '2' and thisTrial_Rep['orientation'] == 90)
                 ) else 0 
-            current_qp.update(stim={'intensity': intensity}, outcome={'response': response}) #QP is not updated if no response is made
+            current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
         
-        # Save response key and accuracy to data file
+        # Save response key, accuracy, RT, and duration to data file
         Trial_Rep.addData('key_resp.keys',key_resp.keys)
         Trial_Rep.addData('Accuracy', response)
-        
         if key_resp.keys != None: 
             Trial_Rep.addData('key_resp.rt', key_resp.rt)
             Trial_Rep.addData('key_resp.duration', key_resp.duration)
@@ -1487,8 +1520,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
 
     # Completed all experiment trials
 
-#####################################################################################################################################################################################################################################
-####### REPEATING NO RESPONSE TRIALS ####################################################################################################################################################################################################    
+####### REPEATING NO RESPONSE EXPERIMENT TRIALS ####################################################################################################################################################################################################    
 
     if no_resp_trials:
         print(f"Re-running {len(no_resp_trials)} trials with no response...")
@@ -1501,9 +1533,7 @@ def run(expInfo, thisExp, win, globalClock=None, thisSession=None):
                 gabor_position=trial['gabor_position']
             )
 
-
-#####################################################################################################################################################################################################################################
-####### PSYCHOPY ENDING EXPERIMENT AND SAVING FILE #################################################################################################################################################################################################### 
+####### PSYCHOPY ENDS EXPERIMENT AND SAVES FILE #################################################################################################################################################################################################### 
 
     # --- Prepare to start Routine "End" ---
     # create an object to store info about Routine End
