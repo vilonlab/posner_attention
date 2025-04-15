@@ -1,0 +1,79 @@
+23.3417     INFO     Investigating repo at C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention
+23.3672     WARNING     We found a repository at C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention but it doesn't point to gitlab.pavlovia.org. You could create that as a remote to sync from PsychoPy.
+## Running: C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention\Experiment\ViLoN_Posner_Cueing_test.py ##
+Orientation: 90, Next Intensity: -19.0, Cue condition: Valid
+Traceback (most recent call last):
+7.9753     INFO     Loaded monitor calibration from ['2024_10_09 19:07']
+  File "C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention\Experiment\ViLoN_Posner_Cueing_test.py", line 1278, in <module>
+    run(
+  File "C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention\Experiment\ViLoN_Posner_Cueing_test.py", line 1043, in run
+    Trial_Rep.addData('Accuracy', response)
+UnboundLocalError: local variable 'response' referenced before assignment
+8.1224     EXP     Created window1 = Window(allowGUI=True, allowStencil=False, autoLog=True, backendConf=UNKNOWN, backgroundFit=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB95D80>, backgroundImage=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB95DE0>, bitsMode=UNKNOWN, blendMode='avg', bpc=(8, 8, 8), color=array([0, 0, 0]), colorSpace='rgb', depthBits=8, fullscr=<method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB95F90>, gamma=None, gammaErrorPolicy='raise', infoMsg=UNKNOWN, lms=UNKNOWN, monitor=<psychopy.monitors.calibTools.Monitor object at 0x0000011F81B6AEC0>, multiSample=False, name='window1', numSamples=2, pos=[0.0, 0.0], screen=1, size=array([1920, 1200]), stencilBits=0, stereo=False, title='PsychoPy', units='height', useFBO=True, useRetina=False, viewOri=0.0, viewPos=None, viewScale=None, waitBlanking=True, winType='pyglet')
+8.1225     EXP     window1: backgroundImage = ''
+8.1225     EXP     window1: backgroundFit = 'none'
+8.1226     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1227     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1238     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1241     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1489     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1490     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1494     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1496     EXP     window1: mouseVisible = <method-wrapper '__getattribute__' of attributeSetter object at 0x0000011FFEB943D0>
+8.1581     EXP     window1: Attempting to measure frame rate of screen (1) ...
+8.1581     EXP     window1: recordFrameIntervals = False
+8.4062     EXP     window1: recordFrameIntervals = True
+8.5908     EXP     Screen (1) actual frame rate measured at 59.69Hz
+8.5908     EXP     window1: recordFrameIntervals = False
+8.5909     EXP     window1: mouseVisible = False
+9.9793     INFO     keyboard.Keyboard is using iohub backend.
+9.9793     INFO     keyboard.Keyboard is using iohub backend.
+9.9793     EXP     ViLoN_Posner_Cueing: status = STARTED
+9.9795     EXP     window1: mouseVisible = False
+10.0273     EXP     Created mainInst = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([-1., -1., -1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=0.04, italic=False, languageStyle='LTR', name='mainInst', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text=str(...), units='height', win=Window(...), wrapWidth=1700)
+10.0274     INFO     keyboard.Keyboard is using iohub backend.
+10.0274     EXP     window1: mouseVisible = False
+10.0288     EXP     Created Gabor = GratingStim(__class__=<class 'psychopy.visual.grating.GratingStim'>, anchor='center', autoDraw=False, autoLog=True, blendmode='avg', color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-2.0, draggable=False, interpolate=True, mask='gauss', maskParams=None, name='Gabor', opacity=1.0, ori=90.0, phase=array([0., 0.]), pos=array([5., 0.]), rgbPedestal=array([0., 0., 0.]), sf=array([5., 5.]), size=array([4., 4.]), tex='sin', texRes=128.0, units='deg', win=Window(...))
+10.0288     EXP     window1: mouseVisible = False
+10.0299     EXP     Created Gabor = GratingStim(__class__=<class 'psychopy.visual.grating.GratingStim'>, anchor='center', autoDraw=False, autoLog=True, blendmode='avg', color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-2.0, draggable=False, interpolate=True, mask='gauss', maskParams=None, name='Gabor', opacity=1.0, ori=0.0, phase=array([0., 0.]), pos=array([-5.,  0.]), rgbPedestal=array([0., 0., 0.]), sf=array([5., 5.]), size=array([4., 4.]), tex='sin', texRes=128.0, units='deg', win=Window(...))
+10.0300     EXP     window1: mouseVisible = False
+10.0320     EXP     Created Fixation_Point = ShapeStim(__class__=<class 'psychopy.visual.shape.ShapeStim'>, anchor=('center', 'center'), autoDraw=False, autoLog=True, closeShape=True, color=method-wrapper(...), colorSpace='rgb', contrast=None, depth=0.0, draggable=False, fillColor=array([1, 1, 1]), fillColorSpace='rgb', fillRGB=array([1, 1, 1]), interpolate=True, lineColor=array([1., 1., 1.]), lineColorSpace='rgb', lineRGB=array([1, 1, 1]), lineWidth=1.0, name='Fixation_Point', opacity=1.0, ori=0.0, pos=array([0., 0.]), size=array([1.5, 1.5]), units='deg', vertices=ndarray(...), win=Window(...), windingRule=None)
+10.0320     EXP     window1: mouseVisible = False
+10.0335     EXP     Created Left_Cue = ShapeStim(__class__=<class 'psychopy.visual.shape.ShapeStim'>, anchor=('center', 'center'), autoDraw=False, autoLog=True, closeShape=True, color=method-wrapper(...), colorSpace='rgb', contrast=None, depth=-1.0, draggable=False, fillColor=array([1, 1, 1]), fillColorSpace='rgb', fillRGB=array([1, 1, 1]), interpolate=True, lineColor=array([1., 1., 1.]), lineColorSpace='rgb', lineRGB=array([1, 1, 1]), lineWidth=1.0, name='Left_Cue', opacity=1.0, ori=0.0, pos=array([-8.,  0.]), size=array([1., 1.]), units='deg', vertices=ndarray(...), win=Window(...), windingRule=None)
+10.0336     EXP     window1: mouseVisible = False
+10.0350     EXP     Created Right_Cue = ShapeStim(__class__=<class 'psychopy.visual.shape.ShapeStim'>, anchor=('center', 'center'), autoDraw=False, autoLog=True, closeShape=True, color=method-wrapper(...), colorSpace='rgb', contrast=None, depth=-1.0, draggable=False, fillColor=array([1, 1, 1]), fillColorSpace='rgb', fillRGB=array([1, 1, 1]), interpolate=True, lineColor=array([1., 1., 1.]), lineColorSpace='rgb', lineRGB=array([1, 1, 1]), lineWidth=1.0, name='Right_Cue', opacity=1.0, ori=0.0, pos=array([8., 0.]), size=array([1., 1.]), units='deg', vertices=ndarray(...), win=Window(...), windingRule=None)
+10.0350     EXP     window1: mouseVisible = False
+10.0360     EXP     Created Gabor = GratingStim(__class__=<class 'psychopy.visual.grating.GratingStim'>, anchor='center', autoDraw=False, autoLog=True, blendmode='add', color=array([1., 1., 1.]), colorSpace='rgb', contrast=1.0, depth=-2.0, draggable=False, interpolate=True, mask='gauss', maskParams=None, name='Gabor', opacity=0.0, ori=0.0, phase=array([0., 0.]), pos=array([8., 0.]), rgbPedestal=array([0., 0., 0.]), sf=array([5., 5.]), size=array([1.5, 1.5]), tex='sin', texRes=128.0, units='deg', win=Window(...))
+10.0361     EXP     window1: mouseVisible = False
+10.0380     EXP     Created endText = TextStim(__class__=<class 'psychopy.visual.text.TextStim'>, alignHoriz=method-wrapper(...), alignText='center', alignVert=method-wrapper(...), anchorHoriz='center', anchorVert='center', antialias=True, autoDraw=False, autoLog=True, bold=False, color=array([-1., -1., -1.]), colorSpace='rgb', contrast=1.0, depth=0.0, draggable=False, flipHoriz=False, flipVert=False, font='Arial', fontFiles=[], height=0.04, italic=False, languageStyle='LTR', name='endText', opacity=1, ori=0, pos=array([0., 0.]), rgb=UNKNOWN, text='Great job!\n\nThanks for playing!', units='height', win=Window(...), wrapWidth=1700)
+10.0380     INFO     keyboard.Keyboard is using iohub backend.
+0.0057     INFO     Keyboard events cleared
+0.0056     EXP     mainInst: autoDraw = True
+0.0056     EXP     Gabor: autoDraw = True
+0.0056     EXP     Gabor: autoDraw = True
+0.0056     EXP     Gabor: tex = 'sin'
+0.0056     EXP     Gabor: tex = 'sin'
+3.5641     EXP     Created sequence: random, trialTypes=4, nReps=16, seed=None
+3.5644     EXP     New trial (rep=0, index=0): {'orientation': 90, 'gabor_position': -1, 'cue_condition': 'Valid'}
+3.5753     DATA     Keypress: space
+3.5773     EXP     mainInst: autoDraw = False
+3.5773     EXP     Gabor: autoDraw = False
+3.5773     EXP     Gabor: autoDraw = False
+3.5773     EXP     Gabor: ori = 90
+3.5773     EXP     Fixation_Point: autoDraw = True
+4.5742     EXP     Left_Cue: autoDraw = True
+4.5742     EXP     Right_Cue: autoDraw = True
+4.7240     EXP     Left_Cue: autoDraw = False
+4.7240     EXP     Right_Cue: autoDraw = False
+5.0751     INFO     Keyboard events cleared
+5.0745     EXP     Gabor: autoDraw = True
+5.0745     EXP     Gabor: tex = 'sin'
+6.0753     EXP     Gabor: autoDraw = False
+7.1876     EXP     window1: mouseVisible = True
+7.1986     INFO     saved data to C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention\Experiment\data/9999_ViLoN_Posner_Cueing_2025-03-12_14h58.48.931.psydat
+7.1991     INFO     saved data to 'C:\\Users\\andlab.AS-LF315-1\\Documents\\Experiments\\PosnerAttention\\Experiment\\data/9999_ViLoN_Posner_Cueing_2025-03-12_14h58.48.931.csv'
+1.0916     WARNING     Monitor specification not found. Creating a temporary one...
+ioHub Server Process Completed With Code:  0
+################ Experiment ended with exit code 1 [pid:26276] #################
+81.9664     INFO     Investigating repo at C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention
+81.9917     WARNING     We found a repository at C:\Users\andlab.AS-LF315-1\Documents\Experiments\PosnerAttention but it doesn't point to gitlab.pavlovia.org. You could create that as a remote to sync from PsychoPy.
