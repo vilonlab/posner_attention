@@ -211,17 +211,17 @@ Gabor = visual.GratingStim(
 feedback = visual.TextStim(win=win, name='feedback',
     text="",
     font='Arial',
-    units='height', pos=(0, 0), draggable=False, height=0.04, wrapWidth=1700, ori=0, 
+    units='height', pos=(0, 0.15), draggable=False, height=0.04, wrapWidth=1700, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
     languageStyle='LTR',
     depth=0.0);
-feedbackImage = visual.ImageStim(
-    win=win, name='feedbackImage',units='deg', 
+feedbackImage = visual.ImageStim(win=win,
+    name='feedbackImage', units='height', 
     image='sin', mask=None,
-    ori=0.0, pos=(4, 0), anchor='center',
-    size=[0.2,0.2], color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, flipHoriz=False, flipVert=False,
-    texRes=128.0, interpolate=True, depth=-1.0)
+    ori=0, pos=(0, 0), size=(.2, .2),
+    color=[1,1,1], colorSpace='rgb', opacity=1,
+    flipHoriz=False, flipVert=False,
+    texRes=128, interpolate=True, depth=-1.0)
 break_text = visual.TextStim(win=win, name='break_text',
     text="Great job!\nLet's take a quick break!", font ='Arial', color= 'black',
     units='height', pos=(0, 0), draggable=False, height=0.04, wrapWidth=1700, ori=0)
@@ -475,7 +475,9 @@ def run_trial(trial, practice = False):
         key_resp.keys = None
         response = None
         if practice:
-            feedback.text = "Try Again!"
+            feedback.text = "Remember to press a button!"
+            feedbackImage.setImage("Images/x_mark.png")
+            feedbackImage.draw()
             feedback.draw()
             win.flip()
             core.wait(1)
@@ -489,12 +491,16 @@ def run_trial(trial, practice = False):
         if response == 1:
             if practice:
                 feedback.text = "Correct!"
+                feedbackImage.setImage("Images/check_mark.png")
+                feedbackImage.draw()
                 feedback.draw()
                 win.flip()
                 core.wait(1)
         else:
             if practice:
                 feedback.text = "Try Again!"
+                feedbackImage.setImage("Images/x_mark.png")
+                feedbackImage.draw()    
                 feedback.draw()
                 win.flip()
                 core.wait(1)         
