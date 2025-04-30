@@ -3,7 +3,7 @@ from psychopy import locale_setup
 from psychopy import prefs
 from psychopy import plugins
 plugins.activatePlugins()
-prefs.hardware['audioLib'] = 'sounddevice'
+prefs.hardware['audioLib'] = 'ptb'
 prefs.hardware['audioLatencyMode'] = '3'
 from psychopy import sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware
 from psychopy.tools import environmenttools
@@ -55,7 +55,7 @@ frameTolerance = 0.001  # how close to onset before 'same' frame
 
 # Window setup for EIZO monitor
 win = visual.Window(fullscr=True, color=[0,0,0],
-            size=[1512, 982], screen=0,
+            size=[1920, 1200], screen=1,
             winType='pyglet', allowStencil=False,
             monitor='Eizo', colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
@@ -608,7 +608,7 @@ while len(no_resp_trials) > 0:
 
         answer = run_trial(trial)
 
-        if answer is None and trial['presented'] < MAX_PRESENTATIONS:
+        if answer is None and trial['presented'] <= MAX_PRESENTATIONS:
             remaining_trials.append(trial)
 
     no_resp_trials = remaining_trials
