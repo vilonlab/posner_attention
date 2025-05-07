@@ -1,57 +1,121 @@
 # --- Import packages ---
-from psychopy import locale_setup
 from psychopy import prefs
 from psychopy import plugins
 plugins.activatePlugins()
 prefs.hardware['audioLib'] = 'ptb'
 prefs.hardware['audioLatencyMode'] = '3'
 from psychopy import sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware
-from psychopy.tools import environmenttools
 from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
                                 STOPPED, FINISHED, PRESSED, RELEASED, FOREVER, priority)
-
-import numpy as np  # whole numpy lib is available, prepend 'np.'
-from numpy import (sin, cos, tan, log, log10, pi, average,
-                   sqrt, std, deg2rad, rad2deg, linspace, asarray)
+import numpy as np 
 from numpy.random import random, randint, normal, shuffle, choice as randchoice
-import os  # handy system and path functions
-import sys  # to get file system encoding
-
-import psychopy.iohub as io
+from string import ascii_letters, digits
+import os
+import sys 
+import time
 from psychopy.hardware import keyboard
-
 from questplus import QuestPlus
+import pylink
+from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 
-####### BACKEND SETUP ####################################################################################################################################################################################################
+####### EYETRACKER SETUP ####################################################################################################################################################################################################
+EYETRACKER_OFF = False #Set this variable to True to run the script without eyetracking
 
+# Collect participant ID and session number
 exp_name = 'Enhancement_Task'
 exp_info = {
     'Participant ID': '',
-    'Session': '',
-}
+    'Session': ''}
 
 dlg = gui.DlgFromDict(dictionary=exp_info, title=exp_name)
 if dlg.OK == False:
     core.quit()
 
+# Clean participant ID
+participant_id = exp_info['Participant ID'].rstrip().split(".")[0]
+
+# Make a subfolder within the data folder
 _thisDir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(_thisDir)
-filename = os.path.join(_thisDir, f"data/{exp_info['Participant ID']}_{exp_name}")
+data_dir = os.path.join(_thisDir, 'data')
+participant_folder = f"{participant_id}" + '_ET' # name of subfolder within data folder
+output_folder = os.path.join(data_dir, participant_folder)
 
-# create an experiment handler to help with data saving
-thisExp = data.ExperimentHandler(
-    name=exp_name, version='',
-    extraInfo=exp_info, runtimeInfo=None,
-    originPath='/Users/trentonwirth/GitHub/posner_attention/Experiment/ViLoN_Posner_Cueing.py',
-    savePickle=True, saveWideText=True,
-    dataFileName=filename, 
-    sortColumns='time')
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
+    
+# Name, sanitize, and validate EDF file (length <= 8 & no special characters)
+edf_filename = participant_id + '_ET'
+edf_path = os.path.join(output_folder, edf_filename + '.EDF')
+allowed_char = ascii_letters + digits + '_'
+if not all([c in allowed_char for c in edf_filename]):
+    raise ValueError("Invalid EDF filename: Only letters, digits, and underscores are allowed.")
+elif len(edf_filename) > 8:
+    raise ValueError("Invalid EDF filename: Must be 8 characters or fewer.")
 
+# Get timestamp
+time_str = time.strftime("_%m_%d_%Y", time.localtime())
+session_identifier = f"{edf_filename}_Session{exp_info['Session']}{time_str}"
+
+# Set file name for task data
+filename = os.path.join(output_folder, f"{participant_id}_{exp_name}")  # for .csv, .log, .psydat
 logFile = logging.LogFile(filename + '.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # this outputs to the screen, not a file
 
-endExpNow = False  # flag to indicate if the experiment is running
-frameTolerance = 0.001  # how close to onset before 'same' frame
+# Connect to the EyeLink Host PC
+if EYETRACKER_OFF:
+    el_tracker = pylink.EyeLink(None)
+else:
+    try:
+        el_tracker = pylink.EyeLink("100.1.1.1")
+    except RuntimeError as error:
+        print('ERROR:', error)
+        core.quit()
+        sys.exit()
+        
+# Open an EDF data file on the Host PC
+edf_file = edf_filename + ".EDF"
+try:
+    el_tracker.openDataFile(edf_file)
+except RuntimeError as err:
+    print('ERROR:', err)
+    # close the link if we have one open
+    if el_tracker.isConnected():
+        el_tracker.close()
+    core.quit()
+    sys.exit()
+
+# Add text for data viewing
+preamble_text = 'RECORDED BY %s' % os.path.basename(__file__)
+el_tracker.sendCommand("add_file_preamble_text '%s'" % preamble_text)
+
+# Put the tracker in offline mode before we change tracking parameters
+el_tracker.setOfflineMode()
+
+eyelink_ver = 0  # set version to 0, in case running without eyetracking
+if not EYETRACKER_OFF:
+    vstr = el_tracker.getTrackerVersionString()
+    eyelink_ver = int(vstr.split()[-1].split('.')[0])
+    # print out some version info in the shell
+    print('Running experiment on %s, version %d' % (vstr, eyelink_ver))
+    
+# what eye events to save in the EDF file, include everything by default
+file_event_flags = 'LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT'
+# what eye events to make available over the link, include everything by default
+link_event_flags = 'LEFT,RIGHT,FIXATION,SACCADE,BLINK,BUTTON,FIXUPDATE,INPUT'
+# what sample data to save in the EDF data file and to make available over the link
+if eyelink_ver > 3:
+    file_sample_flags = 'LEFT,RIGHT,GAZE,HREF,RAW,AREA,HTARGET,GAZERES,BUTTON,STATUS,INPUT'
+    link_sample_flags = 'LEFT,RIGHT,GAZE,GAZERES,AREA,HTARGET,STATUS,INPUT'
+else:
+    file_sample_flags = 'LEFT,RIGHT,GAZE,HREF,RAW,AREA,GAZERES,BUTTON,STATUS,INPUT'
+    link_sample_flags = 'LEFT,RIGHT,GAZE,GAZERES,AREA,STATUS,INPUT'
+el_tracker.sendCommand("file_event_filter = %s" % file_event_flags)
+el_tracker.sendCommand("file_sample_data = %s" % file_sample_flags)
+el_tracker.sendCommand("link_event_filter = %s" % link_event_flags)
+el_tracker.sendCommand("link_sample_data = %s" % link_sample_flags)
+
+# Choose a calibration type (HV = horizontal/vertical), choosing 9-point calibration
+el_tracker.sendCommand("calibration_type = HV9")
 
 # Window setup for EIZO monitor
 win = visual.Window(fullscr=True, color=[0,0,0],
@@ -63,6 +127,59 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             units='height', 
             checkTiming=False)
 
+# get the native screen resolution used by PsychoPy
+scn_width, scn_height = win.size
+
+# Pass the display pixel coordinates (left, top, right, bottom) to the tracker
+el_coords = "screen_pixel_coords = 0 0 %d %d" % (scn_width - 1, scn_height - 1)
+el_tracker.sendCommand(el_coords)
+
+# Write a DISPLAY_COORDS message to the EDF file
+# Data Viewer needs this piece of info for proper visualization
+dv_coords = "DISPLAY_COORDS  0 0 %d %d" % (scn_width - 1, scn_height - 1)
+el_tracker.sendMessage(dv_coords)
+
+# Configure a graphics environment (genv) for tracker calibration
+genv = EyeLinkCoreGraphicsPsychoPy(el_tracker, win)
+
+# Set background and foreground colors for the calibration target
+foreground_color = (-1, -1, -1)
+background_color = win.color
+genv.setCalibrationColors(foreground_color, background_color)
+genv.setTargetType('picture')
+genv.setPictureTarget(os.path.join(_thisDir, 'Images', 'andy_fixation.png')) # need to check the size of Andy
+
+# Beeps to play during calibration, validation and drift correction
+# parameters: target, good, error
+#     target -- sound to play when target moves
+#     good -- sound to play on successful operation
+#     error -- sound to play on failure or interruption
+# Each parameter could be ''--default sound, 'off'--no sound, or a wav file
+genv.setCalibrationSounds('', '', '')
+
+# Request Pylink to use the PsychoPy window we opened above for calibration
+pylink.openGraphicsEx(genv)
+
+# Calibrate eyetracker
+if not EYETRACKER_OFF:
+    try:
+        el_tracker.doTrackerSetup()
+    except RuntimeError as err:
+        print('ERROR:', err)
+        el_tracker.exitCalibration()
+    Should_recal = 'no'
+
+####### EXPERIMENT SETUP ####################################################################################################################################################################################################
+
+# Create an experiment handler to help with data saving
+thisExp = data.ExperimentHandler(
+    name=exp_name, version='',
+    extraInfo=exp_info, runtimeInfo=None,
+    originPath=os.path.abspath(__file__),
+    savePickle=True, saveWideText=True,
+    dataFileName=filename, 
+    sortColumns='time')
+
 # Store frame rate
 exp_info['frameRate'] = win.getActualFrameRate()
 if exp_info['frameRate'] is not None:
@@ -72,24 +189,6 @@ else:
     logging.warning('Frame rate is unknown. Using frame duration of 1/60s.')
 exp_info['frameDur'] = frameDur    
 
-# Device setup
-ioConfig = {
-    'Keyboard': dict(use_keymap='psychopy'),
-    # 'eyetracker.hw.sr_research.eyelink.EyeTracker': {...}  # ADD EYETRACKER LATER
-}
-
-# Launch iohub server to keep track of devices
-ioServer = io.launchHubServer(window=win, **ioConfig)
-deviceManager = hardware.DeviceManager()
-deviceManager.ioServer = ioServer
-
-# Add and get defaultKeyboard
-if deviceManager.getDevice('defaultKeyboard') is None:
-    deviceManager.addDevice(
-        deviceClass='keyboard', deviceName='defaultKeyboard', backend='iohub'
-    )
-defaultKeyboard = deviceManager.getDevice('defaultKeyboard')
-    
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
@@ -146,6 +245,7 @@ SPATIAL_FREQUENCY = 5
 PRACT_CONTRASTS = [0.1, 0.5, 1.0] * 4  # Contrast values for practice trials, length equals trial_types length
 
 # Timing (s)
+frameTolerance = 0.001  # how close to onset before 'same' frame
 ITI = 1.0 # fixation point between trials
 CUE_DURATION = 0.05 
 ISI = 0.1 # fixation point between cue and target
@@ -156,6 +256,7 @@ BREAK_INTERVAL = 32 # Number of trials before each break
 MAX_PRESENTATIONS = 3 # Maximum number of times each trial can be presented 
 
 ####### INITIALIZE VISUALS #################################################################################################################################################################################################### 
+kb = keyboard.Keyboard()
 
 # --- Initialize components for Instructions ---
 Instruct_Text = visual.TextStim(win=win, name='mainInst',
@@ -225,7 +326,6 @@ feedbackImage = visual.ImageStim(win=win,
 break_text = visual.TextStim(win=win, name='break_text',
     text="Great job!\nLet's take a quick break!", font ='Arial', color= 'black',
     units='height', pos=(0, 0), draggable=False, height=0.04, wrapWidth=1700, ori=0)
-key_resp = keyboard.Keyboard()
 
 # --- Initialize components for the End ---
 end_text = visual.TextStim(win=win, name='end_text',
@@ -236,35 +336,80 @@ end_text = visual.TextStim(win=win, name='end_text',
     languageStyle='LTR',
     depth=0.0);
 
-
-####### INSTRUCTIONS  #################################################################################################################################################################################################### 
-
-# Set clocks and start experiment
-globalClock = core.Clock()
-routineTimer = core.Clock()
-logging.setDefaultClock(globalClock)
-win.flip()
-
-exp_info['expStart'] = data.getDateStr(
-        format='%Y-%m-%d %Hh%M.%S.%f %z', fractionalSecondDigits=6)
-thisExp.status = STARTED
-
-Instruct_Text.draw()
-Gabor_Inst1.draw()
-Gabor_Inst2.draw()
-win.flip()
-thisExp.addData('Instructions.started', globalClock.getTime(format='float'))
-
-if defaultKeyboard.getKeys(keyList=["escape"]):
-    thisExp.status = FINISHED
-    win.close()
-    core.quit()
-
-event.waitKeys(keyList=['space']) #Press space to continue to practice trials
-thisExp.addData('Instructions.stopped', globalClock.getTime(format='float'))
-thisExp.nextEntry()
-
 ####### FUNCTIONS #################################################################################################################################################################################################### 
+
+# ------------- Functions for Eyetracker from sample scripts
+def clear_screen(win):
+    """ clear up the PsychoPy window"""
+    win.fillColor = genv.getBackgroundColor()
+    win.flip()
+    
+def abort_trial():
+    """Ends recording """
+    el_tracker = pylink.getEYELINK()
+
+    # Stop recording
+    if el_tracker.isRecording():
+        # add 100 ms to catch final trial events
+        pylink.pumpDelay(100)
+        el_tracker.stopRecording()
+        
+    # Send a message to clear the Data Viewer screen
+    bgcolor_RGB = (116, 116, 116)
+    el_tracker.sendMessage('!V CLEAR %d %d %d' % bgcolor_RGB)
+
+    # send a message to mark trial end
+    el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_ERROR)
+
+    return pylink.TRIAL_ERROR
+    
+def terminate_task():
+    """ Terminate the task gracefully and retrieve the EDF data file
+
+    file_to_retrieve: The EDF on the Host that we would like to download
+    win: the current window used by the experimental script
+    """
+
+    el_tracker = pylink.getEYELINK()
+
+    if el_tracker.isConnected():
+        # Terminate the current trial first if the task terminated prematurely
+        error = el_tracker.isRecording()
+        if error == pylink.TRIAL_OK:
+            abort_trial()
+
+        # Put tracker in Offline mode
+        el_tracker.setOfflineMode()
+
+        # Clear the Host PC screen and wait for 500 ms
+        el_tracker.sendCommand('clear_screen 0')
+        pylink.msecDelay(500)
+
+        # Close the edf data file on the Host
+        el_tracker.closeDataFile()
+
+        # Print a file transfer message
+        print('EDF data is transferring from EyeLink Host PC...')
+
+        # Download the EDF data file from the Host PC to a local data folder
+        # parameters: source_file_on_the_host, destination_file_on_local_drive
+        try:
+            el_tracker.receiveDataFile(edf_filename, edf_path)
+            print(f"EDF file saved to: {edf_path}")
+        except RuntimeError as error:
+            print('ERROR downloading EDF file:', error)
+
+        # Close the link to the tracker.
+        el_tracker.close()
+
+    # close the PsychoPy window
+    win.close()
+
+    # quit PsychoPy
+    core.quit()
+    sys.exit()
+
+# ------------- Functions to run the task by VBG
 
 # Determine the opacity (location) of the cue based on the trial's cue condition
 def get_cue_opacity(cue_condition, gabor_position):
@@ -316,11 +461,11 @@ def draw_comp(comp, t, tThisFlipGlobal, frameN):
     comp.tStartRefresh = tThisFlipGlobal
     win.timeOnFlip(comp, 'tStartRefresh')
     comp.status = STARTED
-    if not isinstance(comp, keyboard.Keyboard):  # key_resp is handled differently
+    if not isinstance(comp, keyboard.Keyboard):  # kb is handled differently
         thisExp.timestampOnFlip(win, f'{comp.name}.started')
         comp.setAutoDraw(True)
     else:
-        thisExp.timestampOnFlip(win, 'key_resp.started')
+        thisExp.timestampOnFlip(win, 'kb.started')
 
 def erase_comp(comp, t, tThisFlipGlobal, frameN):
     comp.tStop = t
@@ -331,16 +476,62 @@ def erase_comp(comp, t, tThisFlipGlobal, frameN):
         thisExp.timestampOnFlip(win, f'{comp.name}.stopped')
         comp.setAutoDraw(False)
     else:
-        thisExp.timestampOnFlip(win, 'key_resp.stopped')
+        thisExp.timestampOnFlip(win, 'kb.stopped')
 
-
-def run_trial(trial, practice = False):
+def run_trial(trial, trial_index, practice = False):
     continueRoutine = True
-    key_resp.keys = []
-    key_resp.rt = []
-    _key_resp_allKeys = []
+    kb.keys = []
+    kb.rt = []
+    kb_allKeys = []
 
-    components = [Fixation_Point, Left_Cue, Right_Cue, Gabor, key_resp]
+    components = [Fixation_Point, Left_Cue, Right_Cue, Gabor, kb]
+    
+    # Esure tracker is ready to receive commands
+    el_tracker = pylink.getEYELINK()
+    el_tracker.setOfflineMode()
+    
+    # Draw fixation cross on host pc to ensure gaze location
+    cross_coords = (int(scn_width/2.0), int(scn_height/2.0))
+#    el_tracker.sendCommand('clear_screen 0')
+    el_tracker.sendCommand('draw_cross %d %d 10' % cross_coords)  # draw cross
+    
+    # send a "TRIAL" message to mark the start of a trial and send status message to host pc
+    el_tracker.sendMessage('TRIALID %d' % trial_index)
+    status_msg = 'TRIAL number %d' % trial_index
+    el_tracker.sendCommand("record_status_message '%s'" % status_msg)
+    
+    # drift check
+    # we recommend drift-check at the beginning of each trial
+    # the doDriftCorrect() function requires target position in integers
+    # the last two arguments:
+    # draw_target (1-default, 0-draw the target then call doDriftCorrect)
+    # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
+    while not EYETRACKER_OFF:
+        # terminate the task if no longer connected to the tracker
+        if (not el_tracker.isConnected()) or el_tracker.breakPressed():
+            terminate_task()
+            return pylink.ABORT_EXPT
+
+        # drift-check and re-do camera setup if ESCAPE is pressed
+        try:
+            error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
+            # break following a success drift-check
+            if error is not pylink.ESC_KEY:
+                break
+        except:
+            pass
+            
+    # put tracker in idle/offline mode before recording
+    el_tracker.setOfflineMode()
+    
+    # Start recording
+    # arguments: sample_to_file, events_to_file, sample_over_link, event_over_link (1-yes, 0-no)
+    try:
+        el_tracker.startRecording(1, 1, 1, 1)
+    except RuntimeError as error:
+        print("ERROR:", error)
+        abort_trial()
+        return pylink.TRIAL_ERROR
 
     # Reset status of components
     for comp in components:
@@ -394,6 +585,7 @@ def run_trial(trial, practice = False):
         if Fixation_Point.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
             Fixation_Point.color = 'white'
             draw_comp(Fixation_Point, t, tThisFlipGlobal, frameN)
+            el_tracker.sendMessage('fixation_started')
         
         if Fixation_Point.status == STARTED:
             if tThisFlip >= 0.9-frameTolerance and tThisFlip < ITI-frameTolerance:
@@ -402,46 +594,49 @@ def run_trial(trial, practice = False):
                 erase_comp(Fixation_Point, t, tThisFlipGlobal, frameN)
         
         if Left_Cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
+            Fixation_Point.color = 'white'
             draw_comp(Left_Cue, t, tThisFlipGlobal, frameN)
             draw_comp(Right_Cue, t, tThisFlipGlobal, frameN)
-            Fixation_Point.color = 'white'
+            el_tracker.sendMessage('cue_started')
         
         if Left_Cue.status == STARTED and tThisFlipGlobal > Left_Cue.tStartRefresh + CUE_DURATION-frameTolerance:
             erase_comp(Left_Cue, t, tThisFlipGlobal, frameN)
             erase_comp(Right_Cue, t, tThisFlipGlobal, frameN)
+            el_tracker.sendMessage('cue_stopped')
 
         if Gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
             draw_comp(Gabor, t, tThisFlipGlobal, frameN)
+            el_tracker.sendMessage('target_started')
 
         if Gabor.status == STARTED and tThisFlipGlobal > Gabor.tStartRefresh + TARGET_DURATION-frameTolerance:
             erase_comp(Gabor, t, tThisFlipGlobal, frameN)
+            el_tracker.sendMessage('target_stopped')
             Fixation_Point.color = 'blue'
         
         waitOnFlip = False  # Wait for key response
 
-        if key_resp.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
-            draw_comp(key_resp, t, tThisFlipGlobal, frameN)
+        if kb.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
+            draw_comp(kb, t, tThisFlipGlobal, frameN)
             waitOnFlip = True  # Wait for key response
-            win.callOnFlip(key_resp.clock.reset)  # t=0 on next screen flip
-            win.callOnFlip(key_resp.clearEvents, eventType='keyboard')
+            win.callOnFlip(kb.clock.reset)  # t=0 on next screen flip
+            win.callOnFlip(kb.clearEvents, eventType='keyboard')
         
-        if key_resp.status == STARTED and tThisFlipGlobal > key_resp.tStartRefresh + (TARGET_DURATION+RESPONSE_DURATION)-frameTolerance:
-            erase_comp(key_resp, t, tThisFlipGlobal, frameN)
+        if kb.status == STARTED and tThisFlipGlobal > kb.tStartRefresh + (TARGET_DURATION+RESPONSE_DURATION)-frameTolerance:
+            erase_comp(kb, t, tThisFlipGlobal, frameN)
 
-        if key_resp.status == STARTED and not waitOnFlip: 
-            theseKeys = key_resp.getKeys(keyList=['1','2'], ignoreKeys=["escape"], waitRelease=False)
-            _key_resp_allKeys.extend(theseKeys)
-            if len(_key_resp_allKeys):
-                thisExp.timestampOnFlip(win, 'key_resp.stopped') # record time of key press
-                key_resp.keys = _key_resp_allKeys[-1].name  # just the last key pressed
-                key_resp.rt = _key_resp_allKeys[-1].rt
-                key_resp.duration = _key_resp_allKeys[-1].duration
+        if kb.status == STARTED and not waitOnFlip: 
+            theseKeys = kb.getKeys(keyList=['1','2'], ignoreKeys=["escape"], waitRelease=False)
+            kb_allKeys.extend(theseKeys)
+            if len(kb_allKeys):
+                thisExp.timestampOnFlip(win, 'kb.stopped') # record time of key press
+                kb.keys = kb_allKeys[-1].name  # just the last key pressed
+                kb.rt = kb_allKeys[-1].rt
+                kb.duration = kb_allKeys[-1].duration
                 continueRoutine = False  # end the routine on key press
     
-        if defaultKeyboard.getKeys(keyList=["escape"]):
+        if kb.getKeys(keyList=["escape"]):
             thisExp.status = FINISHED
-            win.close()
-            core.quit()
+            terminate_task()
 
         if continueRoutine: # To ensure that trial ends when a key is pressed unless a component is still running
             continueRoutine = False
@@ -464,6 +659,10 @@ def run_trial(trial, practice = False):
     thisExp.addData('Left_Cue.opacity', Left_Cue.opacity)
     thisExp.addData('Right_Cue.opacity', Right_Cue.opacity)
     thisExp.addData('Condition', trial['cue_condition'])
+    
+    # Send trial data to EDF file
+    el_tracker.sendMessage('!V TRIAL_VAR condition %s' % trial['cue_condition'])
+    el_tracker.sendMessage('!V TRIAL_VAR RT %d' % kb.rt)
 
     if not practice:
         thisExp.addData('QP_Threshold', threshold)
@@ -471,8 +670,8 @@ def run_trial(trial, practice = False):
         thisExp.addData('QP_Lapse', lapse_rate)
 
     # Response Check
-    if key_resp.keys in ['', [], None]:  # No response was made
-        key_resp.keys = None
+    if kb.keys in ['', [], None]:  # No response was made
+        kb.keys = None
         response = None
         if practice:
             feedback.text = "Remember to press a button!"
@@ -483,8 +682,8 @@ def run_trial(trial, practice = False):
             core.wait(1)
     else:
         response = 1 if (
-            (key_resp.keys == '1' and trial['orientation'] == 0) or 
-            (key_resp.keys == '2' and trial['orientation'] == 90)
+            (kb.keys == '1' and trial['orientation'] == 0) or 
+            (kb.keys == '2' and trial['orientation'] == 90)
             ) else 0
         if not practice:
             current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
@@ -505,20 +704,54 @@ def run_trial(trial, practice = False):
                 win.flip()
                 core.wait(1)         
 
-    thisExp.addData('Keypress',key_resp.keys)
+    thisExp.addData('Keypress',kb.keys)
     thisExp.addData('Accuracy', response)
     # Save response, accuracy, RT, and duration to data file and print response
-    if key_resp.keys != None: 
-        thisExp.addData('RT', key_resp.rt)
-        thisExp.addData('Keypress Duration', key_resp.duration)
+    if kb.keys != None: 
+        thisExp.addData('RT', kb.rt)
+        thisExp.addData('Keypress Duration', kb.duration)
     
     print("Accuracy:", response)
 
     routineTimer.reset()  # Reset the routine timer for the next trial
     thisExp.nextEntry() # Advance to the next row in the data file
+    
+    el_tracker.sendMessage('!V CLEAR 128 128 128')
+    
+    # Stop recording between trials to decrease size of output file
+    pylink.pumpDelay(100) # add 100 msec to catch final events before stopping
+    el_tracker.stopRecording()
+    
+    # Send trial result message to mark the end of the trial
+    el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_OK)
         
     return response
 
+####### INSTRUCTIONS  #################################################################################################################################################################################################### 
+
+# Set clocks and start experiment
+globalClock = core.Clock()
+routineTimer = core.Clock()
+logging.setDefaultClock(globalClock)
+win.flip()
+
+exp_info['expStart'] = data.getDateStr(
+        format='%Y-%m-%d %Hh%M.%S.%f %z', fractionalSecondDigits=6)
+thisExp.status = STARTED
+
+Instruct_Text.draw()
+Gabor_Inst1.draw()
+Gabor_Inst2.draw()
+win.flip()
+thisExp.addData('Instructions.started', globalClock.getTime(format='float'))
+
+if kb.getKeys(keyList=["escape"]):
+    thisExp.status = FINISHED
+    terminate_task()
+
+event.waitKeys(keyList=['space']) #Press space to continue to practice trials
+thisExp.addData('Instructions.stopped', globalClock.getTime(format='float'))
+thisExp.nextEntry()
 
 ####### PRACTICE BLOCK #################################################################################################################################################################################################### 
 
@@ -538,7 +771,7 @@ while repeat_practice:
     for trial in trial_list:
         thisExp.addData('Trial', trial['Index'])
         print(f"Practice Trial {trial['Index']}:", trial)
-        answer = run_trial(trial, practice=True)
+        answer = run_trial(trial, trial['Index'], practice=True)
 
         if answer != None: 
             total_correct += answer
@@ -568,8 +801,7 @@ while repeat_practice:
             end_text.draw()
             win.flip()
             event.waitKeys(keyList=['space'])
-            win.close()
-            core.quit()
+            terminate_task()
 
 ####### EXPERIMENT BLOCK #################################################################################################################################################################################################### 
 
@@ -640,12 +872,5 @@ thisExp.status = FINISHED
 logging.flush()
 
 thisExp.abort()  # or data files might save again on exit
-if win is not None:
-    win.flip()
-    win.close()
-# shut down eyetracker, if there is one
-if deviceManager.getDevice('eyetracker') is not None:
-    deviceManager.removeDevice('eyetracker')
-logging.flush()
-# terminate Python process
-core.quit()
+
+terminate_task()
