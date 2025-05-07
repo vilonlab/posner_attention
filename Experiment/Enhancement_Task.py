@@ -56,8 +56,8 @@ elif len(edf_filename) > 8:
 time_str = time.strftime("_%m_%d_%Y", time.localtime())
 session_identifier = f"{edf_filename}_Session{exp_info['Session']}{time_str}"
 
-# Set file name for task data
-filename = os.path.join(output_folder, f"{participant_id}_{exp_name}")  # for .csv, .log, .psydat
+filename = os.path.join(output_folder, f"{participant_id}_{exp_name}")  # Set file name for task data
+
 logFile = logging.LogFile(filename + '.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # this outputs to the screen, not a file
 
@@ -84,7 +84,7 @@ except RuntimeError as err:
     core.quit()
     sys.exit()
 
-# Add text for data viewing
+# Add header text to EDF file for data viewing
 preamble_text = 'RECORDED BY %s' % os.path.basename(__file__)
 el_tracker.sendCommand("add_file_preamble_text '%s'" % preamble_text)
 
@@ -118,10 +118,11 @@ el_tracker.sendCommand("link_sample_data = %s" % link_sample_flags)
 el_tracker.sendCommand("calibration_type = HV9")
 
 # Window setup for EIZO monitor
+Eizo = monitors.Monitor('Eizo')
 win = visual.Window(fullscr=True, color=[0,0,0],
             size=[1920, 1200], screen=1,
             winType='pyglet', allowStencil=False,
-            monitor='Eizo', colorSpace='rgb',
+            monitor=Eizo, colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=True,
             units='height', 
@@ -167,7 +168,6 @@ if not EYETRACKER_OFF:
     except RuntimeError as err:
         print('ERROR:', err)
         el_tracker.exitCalibration()
-    Should_recal = 'no'
 
 ####### EXPERIMENT SETUP ####################################################################################################################################################################################################
 
@@ -354,6 +354,7 @@ def abort_trial():
         pylink.pumpDelay(100)
         el_tracker.stopRecording()
         
+    clear_screen(win)
     # Send a message to clear the Data Viewer screen
     bgcolor_RGB = (116, 116, 116)
     el_tracker.sendMessage('!V CLEAR %d %d %d' % bgcolor_RGB)
@@ -492,7 +493,7 @@ def run_trial(trial, trial_index, practice = False):
     
     # Draw fixation cross on host pc to ensure gaze location
     cross_coords = (int(scn_width/2.0), int(scn_height/2.0))
-#    el_tracker.sendCommand('clear_screen 0')
+    el_tracker.sendCommand('clear_screen 0')
     el_tracker.sendCommand('draw_cross %d %d 10' % cross_coords)  # draw cross
     
     # send a "TRIAL" message to mark the start of a trial and send status message to host pc
@@ -532,6 +533,8 @@ def run_trial(trial, trial_index, practice = False):
         print("ERROR:", error)
         abort_trial()
         return pylink.TRIAL_ERROR
+    
+    pylink.pumpDelay(100) # add 100 msec to catch final events before starting the trial
 
     # Reset status of components
     for comp in components:
