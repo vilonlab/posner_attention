@@ -657,7 +657,7 @@ def run_trial(trial, trial_index, practice = False):
             el_tracker.sendMessage('fixation_started')
         
         if fix_cross.status == STARTED:
-            # Make fixation cross green for last 100 ms before cue
+            # Make fixation cross green for last 500ms in the middle of ITI
             if tThisFlip >= 1.0-frameTolerance and tThisFlip < ITI-frameTolerance:
                 fix_cross.color = 'green'
             if tThisFlip >= 1.5-frameTolerance and tThisFlip < ITI-frameTolerance:
