@@ -620,6 +620,10 @@ def run_trial(trial, trial_index, practice = False):
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
     left_cue.opacity, right_cue.opacity = get_cue_opacity(trial['cue_condition'], trial['gabor_position'])
+    if trial['gabor_position'] == -1:
+        gabor_pos_readable = 'L'
+    else:
+        gabor_pos_readable = 'R'
 
     if practice: # Set Gabor contrast and orientation for practice trials
         intensity = pract_contrasts.pop(0)
@@ -657,7 +661,7 @@ def run_trial(trial, trial_index, practice = False):
             el_tracker.sendMessage('fixation_started')
         
         if fix_cross.status == STARTED:
-            # Make fixation cross green for last 500ms in the middle of ITI
+            # Make fixation cross green for 500ms in the middle of ITI
             if tThisFlip >= 1.0-frameTolerance and tThisFlip < ITI-frameTolerance:
                 fix_cross.color = 'green'
             if tThisFlip >= 1.5-frameTolerance and tThisFlip < ITI-frameTolerance:
@@ -732,6 +736,7 @@ def run_trial(trial, trial_index, practice = False):
     # Add trial data to the data file
     thisExp.addData('gabor.intensity', intensity)
     thisExp.addData('gabor.pos', gabor.pos)
+    thisExp.addData('gabor.pos.readable', gabor_pos_readable)
     thisExp.addData('gabor.ori', gabor.ori)
     thisExp.addData('left_cue.opacity', left_cue.opacity)
     thisExp.addData('right_cue.opacity', right_cue.opacity)
@@ -789,7 +794,6 @@ def run_trial(trial, trial_index, practice = False):
     # Save response, accuracy, RT, and duration to data file and print response
     if kb.keys != None: 
         thisExp.addData('RT', kb.rt)
-        thisExp.addData('Keypress Duration', kb.duration)
     
     print("Response:", response)
     print(f"Next Intensity: {intensity}")
