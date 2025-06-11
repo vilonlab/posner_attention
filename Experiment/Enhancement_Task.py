@@ -529,8 +529,7 @@ def get_eye_used(el_tracker):
     print("ERROR: EyeLink not connected or invalid eye")
     return None
 
-def is_gaze_within_bounds(el_tracker, eye_used, bounds_deg=GAZE_THRESHOLD, loss_threshold=0.1):
-    loss_clock = core.Clock()
+def is_gaze_within_bounds(el_tracker, eye_used, loss_clock, bounds_deg=GAZE_THRESHOLD, loss_threshold=0.1):
     while True:
         sample = el_tracker.getNewestSample()
 
@@ -539,10 +538,9 @@ def is_gaze_within_bounds(el_tracker, eye_used, bounds_deg=GAZE_THRESHOLD, loss_
         elif eye_used == 1 and sample.isRightSample():
             eye_data = sample.getRightEye()
         else:
-            if loss_clock.getTime() == 0:
-                loss_clock.reset()
-            elif loss_clock.getTime() > loss_threshold:
+            if loss_clock.getTime() > loss_threshold:
                 print("Loss of sample for longer than 100ms.")
+                thisExp.addData('Loss clock', loss_clock)
                 return False  # No valid eye data in this sample
             continue
 
@@ -572,6 +570,9 @@ def run_trial(trial, trial_index, practice = False):
     kb.rt = []
     kb_allKeys = []
     eye_used = None
+
+    # Initialize the clock that will keep track of signal loss duration
+    loss_clock = core.Clock()
 
     components = [fix_cross, left_cue, right_cue, gabor, kb]
     
@@ -681,8 +682,7 @@ def run_trial(trial, trial_index, practice = False):
             
         # Gaze contingency 
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= GAZE_CHECK[1]-frameTolerance:
-            if not is_gaze_within_bounds(el_tracker, eye_used):
-                print("Gaze left fixation area.")
+            if not is_gaze_within_bounds(el_tracker, eye_used, loss_clock = loss_clock):
                 return abort_trial()
         # -------------------------------------------------------------------------------------------------
 
