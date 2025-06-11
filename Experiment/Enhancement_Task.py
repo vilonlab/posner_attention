@@ -514,7 +514,7 @@ def erase_comp(comp, t, tThisFlipGlobal, frameN):
 
 def get_eye_used(el_tracker):
     if EYETRACKER_OFF:
-        return 0
+        return 0 # For when running without eyetracking
 
     # Returns 0 for left, 1 for right, None if eye data cannot be collected. 
     if el_tracker is not None and el_tracker.isConnected():
@@ -522,16 +522,15 @@ def get_eye_used(el_tracker):
         if eye in [0, 1]:
             el_tracker.sendMessage(f"EYE_USED {eye} {'RIGHT' if eye == 1 else 'LEFT'}")
             return eye
-        elif eye == 2:
+        elif eye == 2: # bonicular vision defaults to left eye
             el_tracker.sendMessage("EYE_USED 0 LEFT")
             return 0
+            
     print("ERROR: EyeLink not connected or invalid eye")
     return None
 
 def is_gaze_within_bounds(el_tracker, eye_used, bounds_deg=GAZE_THRESHOLD, loss_threshold=0.1):
-    
     loss_clock = core.Clock()
-    
     while True:
         sample = el_tracker.getNewestSample()
 
@@ -563,7 +562,7 @@ def is_gaze_within_bounds(el_tracker, eye_used, bounds_deg=GAZE_THRESHOLD, loss_
         pixels = np.array([dx, dy])
         dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
     #    print(f"Gaze in degrees: ({dx_deg},{dy_deg})")
-
+    
         return abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg
 
 def run_trial(trial, trial_index, practice = False):
