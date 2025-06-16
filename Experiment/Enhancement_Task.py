@@ -93,7 +93,7 @@ print("Break interval:", BREAK_INTERVAL)
 time_str = time.strftime("_%m_%d_%Y", time.localtime())
 output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Session{exp_info['Session']}{time_str}")
 os.makedirs(output_folder, exist_ok=True)
-edf_path = os.path.join(output_folder, edf_filename + '.EDF')
+edf_path = os.path.join(output_folder, f"{edf_filename}_Session{exp_info['Session']}")
 
 # Set file name for psychopy task data (.csv, .psydat)
 filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Session{exp_info['Session']}") 
@@ -109,7 +109,7 @@ else:
     try:
         el_tracker = pylink.EyeLink("100.1.1.1")
     except RuntimeError as error:
-        print("Error #1") # troubleshoot
+        print("Error #1") # troubleshooting
         print('ERROR:', error)
         core.quit()
         sys.exit()
@@ -119,7 +119,7 @@ edf_file = edf_filename + ".EDF"
 try:
     el_tracker.openDataFile(edf_file)
 except RuntimeError as err:
-    print("Error #2") #troubleshoot
+    print("Error #2") #troubleshooting
     print('ERROR:', err)
     # close the link if we have one open
     if el_tracker.isConnected():
@@ -171,7 +171,7 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             checkTiming=False)
 
 # Get the screen resolution used by PsychoPy
-scn_width, scn_height = win.size
+scn_width, scn_height = win.size # in retina pixels
 
 # Pass the display pixel coordinates (left, top, right, bottom) to the tracker
 el_coords = "screen_pixel_coords = 0 0 %d %d" % (scn_width - 1, scn_height - 1)
@@ -210,7 +210,7 @@ if exp_info['frameRate'] is not None:
     frameDur = 1.0 / round(exp_info['frameRate'])
 else:
     frameDur = 1.0 / 60.0 # couldn't get a reliable measure so guess
-    logging.warning('Frame rate is unknown. Using frame duration of 1/60s.')
+    print('Frame rate is unknown. Using frame duration of 1/60s.')
 exp_info['frameDur'] = frameDur   
 
 # Create an experiment handler
@@ -579,11 +579,7 @@ def run_trial(trial, trial_index, practice = False):
     # Esure tracker is ready to receive commands
     el_tracker = pylink.getEYELINK()
     el_tracker.setOfflineMode()
-    
-    # When using eyetracking, abort trial if no eye information can be collected
-    eye_used = get_eye_used(el_tracker)
-    if eye_used is None and not EYETRACKER_OFF:
-        return abort_trial()
+    el_tracker.sendCommand('clear_screen 0')
     
     # send a "TRIAL" message to mark the start of a trial and send status message to host pc
     el_tracker.sendMessage('TRIALID %d' % trial_index)
@@ -598,11 +594,16 @@ def run_trial(trial, trial_index, practice = False):
     try:
         el_tracker.startRecording(1, 1, 1, 1)
     except RuntimeError as error:
-        print("Error #4") # troubleshoot
+        print("Error #4") # troubleshooting
         print("ERROR:", error)
         return abort_trial()
     
     pylink.pumpDelay(100) # add 100 msec to catch final events before starting the trial
+    
+    # Get eye used. When using eyetracking, abort trial if no eye information can be collected
+    eye_used = get_eye_used(el_tracker)
+    if eye_used is None and not EYETRACKER_OFF:
+        return abort_trial()
 
     # Reset status of components
     for comp in components:
@@ -655,13 +656,14 @@ def run_trial(trial, trial_index, practice = False):
         tThisFlipGlobal = win.getFutureFlipTime(clock=None)
         frameN = frameN + 1  
     
+        # Draw fixation cross at start of trial
         if fix_cross.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
             fix_cross.color = 'white'
             draw_comp(fix_cross, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('fixation_started')
         
+        # Make fixation cross green for 500ms in the middle of ITI, then white for remainder of the trial
         if fix_cross.status == STARTED:
-            # Make fixation cross green for 500ms in the middle of ITI
             if tThisFlip >= 1.0-frameTolerance and tThisFlip < ITI-frameTolerance:
                 fix_cross.color = 'green'
             if tThisFlip >= 1.5-frameTolerance and tThisFlip < ITI-frameTolerance:
