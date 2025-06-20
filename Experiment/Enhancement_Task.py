@@ -45,6 +45,7 @@ TOTAL_TRIAL_DURATION = ITI + CUE_DURATION + ISI + TARGET_DURATION + RESPONSE_DUR
 MAX_PRESENTATIONS = 3 # Maximum number of times each trial can be presented
 FEEDBACK_DURATION = 1.0 # (s)
 GAZE_CHECK = [ITI, ITI + CUE_DURATION+ISI+TARGET_DURATION] # From cue onset to target offset
+MAX_LOSS_FRAMES = 6 # Maximum number of frames to tolerate loss of signal; 6 frames is approx 100 ms - avg duration of a blink
 
 # Create a dictionary of 12 unique trial types used to create practice and experiment trial lists
 trial_types = data.createFactorialTrialList({
@@ -109,7 +110,6 @@ else:
     try:
         el_tracker = pylink.EyeLink("100.1.1.1")
     except RuntimeError as error:
-        print("Error #1") # troubleshooting
         print('ERROR:', error)
         core.quit()
         sys.exit()
@@ -119,7 +119,6 @@ edf_file = edf_filename + ".EDF"
 try:
     el_tracker.openDataFile(edf_file)
 except RuntimeError as err:
-    print("Error #2") #troubleshooting
     print('ERROR:', err)
     # close the link if we have one open
     if el_tracker.isConnected():
@@ -358,7 +357,7 @@ end_text = visual.TextStim(win=win, name='end_text',
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
 # ------------- Functions for Eyetracker from sample scripts (with some adjustments)
-def abort_trial():
+def abort_trial(trial_index = 0):
     # Returns None and clears the eyetracker
     el_tracker = pylink.getEYELINK()
     
@@ -380,7 +379,7 @@ def abort_trial():
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_ERROR)
     
     if thisExp.status != FINISHED:
-        print('Trial aborted.')
+        print(f'Trial {trial_index} aborted.')
         trial['presented'] += 1
         thisExp.addData('Presentations', trial['presented'])
         thisExp.addData('trial.aborted', 'aborted')
@@ -516,7 +515,6 @@ def get_eye_used(el_tracker):
     if EYETRACKER_OFF:
         return 0 # For when running without eyetracking
 
-    # Returns 0 for left, 1 for right, None if eye data cannot be collected. 
     if el_tracker is not None and el_tracker.isConnected():
         eye = el_tracker.eyeAvailable()
         if eye in [0, 1]:
@@ -529,39 +527,48 @@ def get_eye_used(el_tracker):
     print("ERROR: EyeLink not connected or invalid eye")
     return None
 
-def is_gaze_within_bounds(el_tracker, eye_used, loss_clock, bounds_deg=GAZE_THRESHOLD, loss_threshold=0.1):
+def is_gaze_within_bounds(el_tracker, eye_used, loss_clock, new_sample = None, old_sample = None, bounds_deg=GAZE_THRESHOLD):
     while True:
-        sample = el_tracker.getNewestSample()
+        new_sample = el_tracker.getNewestSample()
+        if new_sample is not None:
+            if old_sample is not None:
+                if now_sample.getTime() != old_sample.getTime():
+                    if eye_used == 0 and new_sample.isLeftSample():
+                        gaze = new_sample.getLeftEye().getGaze() 
+                    if eye_used == 1 and new_sample.isRightSample():
+                        gaze = new_sample.getRightEye().getGaze()
+                        
+                    # Convert pixels to degrees
+                    dx = gaze[0] - scn_width / 2
+                    dy = scn_height / 2 - gaze[1]
+                    pixels = np.array([dx, dy])
+                    dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
+                    
+                    # Check if gaze is within bounds
+                    if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
+                        loss_clock.reset()
+                        return True
 
-        if eye_used == 0 and sample.isLeftSample():
-            eye_data = sample.getLeftEye()
-        elif eye_used == 1 and sample.isRightSample():
-            eye_data = sample.getRightEye()
-        else:
-            if loss_clock.getTime() > loss_threshold:
-                print("Loss of sample for longer than 100ms.")
-                thisExp.addData('Loss clock', loss_clock)
-                return False  # No valid eye data in this sample
-            continue
-
-        gaze = eye_data.getGaze()
-        pupil = eye_data.getPupilSize()
-
-        # Blink check: pupil size is 0 or negative
-        if pupil <= 0:
-            print("Blink detected.")
-            return True
-        
-        loss_clock.reset()
-
-        # Convert to degrees
-        dx = gaze[0] - scn_width / 2
-        dy = scn_height / 2 - gaze[1]
-        pixels = np.array([dx, dy])
-        dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
-    #    print(f"Gaze in degrees: ({dx_deg},{dy_deg})")
-    
-        return abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg
+            
+            # Check if gaze is within bounds
+            if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
+                loss_frame_count = 0 # Reset on valid fixation
+                return True # Trial will continue
+            else:
+                loss_frame_count += 1
+                break
+                
+        elif dt == 0:
+            # No new data in sample buffer
+            loss_frame_count += 1
+            break
+            
+    # Check to see if we've reached frame loss threshold
+    if loss_frame_count > max_lost_frames:
+        print(f"Gaze invalid for {loss_frame_count} consecutive frames.")
+        return False
+            
+    return True
 
 def run_trial(trial, trial_index, practice = False):
     # Returns response: 1- Correct; 0 - Incorrent; None - No response or trial aborted
@@ -570,10 +577,7 @@ def run_trial(trial, trial_index, practice = False):
     kb.rt = []
     kb_allKeys = []
     eye_used = None
-
-    # Initialize the clock that will keep track of signal loss duration
-    loss_clock = core.Clock()
-
+    
     components = [fix_cross, left_cue, right_cue, gabor, kb]
     
     # Esure tracker is ready to receive commands
@@ -594,16 +598,18 @@ def run_trial(trial, trial_index, practice = False):
     try:
         el_tracker.startRecording(1, 1, 1, 1)
     except RuntimeError as error:
-        print("Error #4") # troubleshooting
         print("ERROR:", error)
-        return abort_trial()
+        return abort_trial(trial_index)
     
-    pylink.pumpDelay(100) # add 100 msec to catch final events before starting the trial
+    # Allocate time for the tracker to cache some samples
+    pylink.pumpDelay(100) 
     
-    # Get eye used. When using eyetracking, abort trial if no eye information can be collected
+    # Get eye used. When using eyetracking, abort trial if no eye information can be collected.
+    # Returns 0 for left, 1 for right, None if eye data cannot be collected.
     eye_used = get_eye_used(el_tracker)
     if eye_used is None and not EYETRACKER_OFF:
-        return abort_trial()
+        print(f"Could not get eye used on trial {trial_index}.")
+        return abort_trial(trial_index)
 
     # Reset status of components
     for comp in components:
@@ -618,6 +624,7 @@ def run_trial(trial, trial_index, practice = False):
     t = 0
     frameN = -1
 
+    # Set up trial parameters
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
     left_cue.opacity, right_cue.opacity = get_cue_opacity(trial['cue_condition'], trial['gabor_position'])
@@ -649,14 +656,25 @@ def run_trial(trial, trial_index, practice = False):
         
         # Update gabor contrast
         gabor.contrast = intensity
+        
+    # Abort trial if tracker is no longer recording
+    error = el_tracker.isRecording()
+    if error is not pylink.TRIAL_OK:
+        el_tracker.sendMessage('tracker_disconnected')
+        print("Tracker disconnected - aborting trial.")
+        return abort_trial
+        
+    loss_clock = core.Clock()
+    old_sample = None
+    gaze_within_bounds = True
 
-    while continueRoutine: # Update components on each frame
+    while continueRoutine: # One cycle of this while loop = 1 frame (~every 16.67ms on a 60 Hz monitor)
         t = routineTimer.getTime()
         tThisFlip = win.getFutureFlipTime(clock=routineTimer)
         tThisFlipGlobal = win.getFutureFlipTime(clock=None)
         frameN = frameN + 1  
     
-        # Draw fixation cross at start of trial
+        # Draw white fixation cross at start of trial
         if fix_cross.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
             fix_cross.color = 'white'
             draw_comp(fix_cross, t, tThisFlipGlobal, frameN)
@@ -671,6 +689,7 @@ def run_trial(trial, trial_index, practice = False):
             if tThisFlipGlobal > fix_cross.tStartRefresh + TOTAL_TRIAL_DURATION-frameTolerance:
                 erase_comp(fix_cross, t, tThisFlipGlobal, frameN)
         
+        # Draw the left and right cues (onset and offset is same for both)
         if left_cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
             fix_cross.color = 'white'
             draw_comp(left_cue, t, tThisFlipGlobal, frameN)
@@ -681,11 +700,40 @@ def run_trial(trial, trial_index, practice = False):
             erase_comp(left_cue, t, tThisFlipGlobal, frameN)
             erase_comp(right_cue, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('cue_stopped')
-            
-        # Gaze contingency 
+        
+        # -------------------------------------------------------------------------------------------------
+        # Gaze contingency
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= GAZE_CHECK[1]-frameTolerance:
-            if not is_gaze_within_bounds(el_tracker, eye_used, loss_clock = loss_clock):
-                return abort_trial()
+            while gaze_within_bounds: # Troubleshooting: check if this while loop messes with the flow of the trial (ie. delays gabor presentaion)
+                new_sample = el_tracker.getNewestSample()
+                if new_sample is not None:
+                    if old_sample is None or new_sample.getTime() != old_sample.getTime():
+                        # Get gaze position pixel coords
+                        if eye_used == 0 and new_sample.isLeftSample():
+                            eye_data = new_sample.getLeftEye()
+                        elif eye_used == 1 and new_sample.isRightSample():
+                            eye_data = new_sample.getRightEye()
+                            
+                        pupil = eye_data.getPupilSize()
+                        if pupil <= 0:
+                            # Blink in progress - abort if too long
+                            if loss_clock.getTime() > 0.1:
+                                print("Long blink detected.")
+                                return abort_trial(trial_index)
+                        else: 
+                            # Check gaze if no blink detected
+                            gaze = eye_data.getGaze()
+                            dx = gaze[0] - scn_width / 2
+                            dy = scn_height / 2 - gaze[1]
+                            dx_deg, dy_deg = pix2deg([dx, dy], monitor=Eizo)
+                            
+                            # Check if gaze is within bounds
+                            if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
+                                loss_clock.reset() # Valid fixation, reset clock
+                            elif loss_clock.getTime() > 0.1: # Abort trial if gaze not within bounds for more than 100ms
+                                print("Gaze outside bounds for more than 100ms.")
+                                return abort_trial(trial_index)
+                    old_sample = new_sample
         # -------------------------------------------------------------------------------------------------
 
         if gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
@@ -836,7 +884,6 @@ if not EYETRACKER_OFF:
     try:
         el_tracker.doTrackerSetup()
     except RuntimeError as err:
-        print("ERROR #5") #troubleshoot
         print('ERROR:', err)
         el_tracker.exitCalibration()
 
@@ -899,7 +946,6 @@ while repeat_practice:
             prac_outcome_text.draw()
             win.flip()
             event.waitKeys(keyList=['space'])
-#            routineTimer.reset()
         else: # End experiment if accuracy below 75% after two attempts
             print("Participant did not pass practice trials. Ending experiment.")
             end_text.draw()
@@ -952,8 +998,6 @@ for trial in trial_list:
                     break
             except:
                 pass
-                
-#        routineTimer.reset()
 
 # Repeat trials with no response
 while len(no_resp_trials) > 0:
