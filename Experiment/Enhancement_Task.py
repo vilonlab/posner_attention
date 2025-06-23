@@ -527,49 +527,6 @@ def get_eye_used(el_tracker):
     print("ERROR: EyeLink not connected or invalid eye")
     return None
 
-def is_gaze_within_bounds(el_tracker, eye_used, loss_clock, new_sample = None, old_sample = None, bounds_deg=GAZE_THRESHOLD):
-    while True:
-        new_sample = el_tracker.getNewestSample()
-        if new_sample is not None:
-            if old_sample is not None:
-                if now_sample.getTime() != old_sample.getTime():
-                    if eye_used == 0 and new_sample.isLeftSample():
-                        gaze = new_sample.getLeftEye().getGaze() 
-                    if eye_used == 1 and new_sample.isRightSample():
-                        gaze = new_sample.getRightEye().getGaze()
-                        
-                    # Convert pixels to degrees
-                    dx = gaze[0] - scn_width / 2
-                    dy = scn_height / 2 - gaze[1]
-                    pixels = np.array([dx, dy])
-                    dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
-                    
-                    # Check if gaze is within bounds
-                    if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
-                        loss_clock.reset()
-                        return True
-
-            
-            # Check if gaze is within bounds
-            if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
-                loss_frame_count = 0 # Reset on valid fixation
-                return True # Trial will continue
-            else:
-                loss_frame_count += 1
-                break
-                
-        elif dt == 0:
-            # No new data in sample buffer
-            loss_frame_count += 1
-            break
-            
-    # Check to see if we've reached frame loss threshold
-    if loss_frame_count > max_lost_frames:
-        print(f"Gaze invalid for {loss_frame_count} consecutive frames.")
-        return False
-            
-    return True
-
 def run_trial(trial, trial_index, practice = False):
     # Returns response: 1- Correct; 0 - Incorrent; None - No response or trial aborted
     continueRoutine = True
@@ -704,36 +661,39 @@ def run_trial(trial, trial_index, practice = False):
         # -------------------------------------------------------------------------------------------------
         # Gaze contingency
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= GAZE_CHECK[1]-frameTolerance:
-            while gaze_within_bounds: # Troubleshooting: check if this while loop messes with the flow of the trial (ie. delays gabor presentaion)
-                new_sample = el_tracker.getNewestSample()
-                if new_sample is not None:
-                    if old_sample is None or new_sample.getTime() != old_sample.getTime():
-                        # Get gaze position pixel coords
-                        if eye_used == 0 and new_sample.isLeftSample():
-                            eye_data = new_sample.getLeftEye()
-                        elif eye_used == 1 and new_sample.isRightSample():
-                            eye_data = new_sample.getRightEye()
-                            
-                        pupil = eye_data.getPupilSize()
-                        if pupil <= 0:
-                            # Blink in progress - abort if too long
-                            if loss_clock.getTime() > 0.1:
-                                print("Long blink detected.")
-                                return abort_trial(trial_index)
-                        else: 
-                            # Check gaze if no blink detected
-                            gaze = eye_data.getGaze()
-                            dx = gaze[0] - scn_width / 2
-                            dy = scn_height / 2 - gaze[1]
-                            dx_deg, dy_deg = pix2deg([dx, dy], monitor=Eizo)
-                            
-                            # Check if gaze is within bounds
-                            if abs(dx_deg) <= bounds_deg and abs(dy_deg) <= bounds_deg:
-                                loss_clock.reset() # Valid fixation, reset clock
-                            elif loss_clock.getTime() > 0.1: # Abort trial if gaze not within bounds for more than 100ms
-                                print("Gaze outside bounds for more than 100ms.")
-                                return abort_trial(trial_index)
-                    old_sample = new_sample
+#            while gaze_within_bounds: # Troubleshooting: this while loop messes with the flow of the trial (ie. delays gabor presentaion), add cue and gabor drawing to the inside of the while loop?
+            new_sample = el_tracker.getNewestSample()
+            if new_sample is not None:
+                if old_sample is None or new_sample.getTime() != old_sample.getTime():
+                    # Get gaze position pixel coords
+                    if eye_used == 0 and new_sample.isLeftSample():
+                        eye_data = new_sample.getLeftEye()
+                    elif eye_used == 1 and new_sample.isRightSample():
+                        eye_data = new_sample.getRightEye()
+                        
+                    pupil = eye_data.getPupilSize()
+                    if pupil <= 0:
+                        # Blink in progress - abort if too long
+                        if loss_clock.getTime() > 0.2:
+                            print("Long blink detected.")
+                            thisExp.addData('Loss Clock', loss_clock.getTime())
+                            return abort_trial(trial_index)
+                    else: 
+                        # Check gaze if no blink detected
+                        gaze = eye_data.getGaze()
+                        dx = gaze[0] - scn_width / 2
+                        dy = scn_height / 2 - gaze[1]
+                        pixels = np.array([dx, dy])
+                        dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
+                        
+                        # Check if gaze is within bounds
+                        if abs(dx_deg) <= GAZE_THRESHOLD and abs(dy_deg) <= GAZE_THRESHOLD:
+                            loss_clock.reset() # Valid fixation, reset clock
+                        elif loss_clock.getTime() > 0.2: # Abort trial if gaze not within bounds for more than 100ms
+                            print("Gaze outside bounds for more than 100ms.")
+                            thisExp.addData('Loss Clock', loss_clock.getTime())
+                            return abort_trial(trial_index)
+                old_sample = new_sample
         # -------------------------------------------------------------------------------------------------
 
         if gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
@@ -858,6 +818,7 @@ def run_trial(trial, trial_index, practice = False):
     
     trial['presented'] += 1
     thisExp.addData('Presentations', trial['presented'])
+    thisExp.addData('Loss Clock', loss_clock.getTime())
     
     thisExp.nextEntry() # Advance to the next row in the data file
         
