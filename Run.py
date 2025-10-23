@@ -22,6 +22,7 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 EYETRACKER_OFF = False # Set this variable to True to run the script without eyetracking
+current_qp = None # Setting global variable so then we can print posteriors at the end
 
 TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial_types (total # trials = TRIAL_REPEITIONS * length(trial_types))
 PRACTRIALS_REPETITIONS = 1 # Same as above, but for practice trials
@@ -36,15 +37,16 @@ PRACT_CONTRASTS = [0.1, 0.5, 1.0] * 4  # Hardcoded contrast values for practice 
 
 # Timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
-ITI = 2.5 # Duration of fixation point between trials (s) - includes white-green-white fixation, everything except cue, ISI, target, and response window
-CUE_DURATION = 0.05 # (s)
-ISI = 0.1 # Duration of fixation point between cue and target (s)
-TARGET_DURATION = 0.5 # (s)
-RESPONSE_DURATION = 1.0 # (s) Total response window is TARGET_DURATION + RESPONSE_DURATION 
-TOTAL_TRIAL_DURATION = ITI + CUE_DURATION + ISI + TARGET_DURATION + RESPONSE_DURATION
+FIX_CROSS_DUR = 1 # (s) fixation cross before Andy
+ANDY_FIX_DUR = 1.5 # (s) Andy right before cue
+CUE_DUR = 0.05 # (s) 
+ISI = 0.05 # Andy between cue and target (s)
+TARGET_DUR = 0.1 # (s) 
+RESPONSE_WINDOW = 1.0 # (s) Andy displayed after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
+TOTAL_TRIAL_DUR = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW
 MAX_PRESENTATIONS = 3 # Maximum number of times each trial can be presented
-FEEDBACK_DURATION = 1.0 # (s)
-GAZE_CHECK = [ITI, ITI + CUE_DURATION+ISI+TARGET_DURATION] # From cue onset to target offset
+FEEDBACK_DUR = 1.0 # (s), for practice blocks
+GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR] # From cue onset to target offset
 MAX_BLINK_DUR = 0.2 # Maximum duration allowed for a blink (s)
 MAX_OUT_DUR = 0.1 # Maximum duration allowed out of bounds (s)
 
@@ -88,8 +90,8 @@ while True:
     else:
         break
 
-BREAK_INTERVAL = (TRIAL_REPETITIONS*len(trial_types))/blocks # Number of trials before each break
-print("Break interval:", BREAK_INTERVAL)
+trials_per_block = (TRIAL_REPETITIONS*len(trial_types))/blocks # calculate number of trials in each block
+print("Trials per block:", trials_per_block)
 
 # Establish data output directory
 time_str = time.strftime("_%m_%d_%Y", time.localtime())
@@ -301,8 +303,14 @@ fix_cross = visual.ShapeStim(
     win=win, name='fix_cross', vertices='cross',units='deg', 
     size=(FIXATION_SIZE[0], FIXATION_SIZE[1]),
     ori=0.0, pos=(0, 0), anchor='center',
-    lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
+    lineWidth=1.0,     colorSpace='rgb',  lineColor='black', fillColor='black',
     opacity=1.0, depth=0.0, interpolate=True)
+andy_fix = visual.ImageStim(win=win,
+    image = "images/andy_fixation.png",
+    name='andy_fix', units='deg', 
+    mask=None, ori=0, pos=(0, 0), 
+    size=(3,3),
+    colorSpace='rgb')
 left_cue = visual.ShapeStim(
     win=win, name='left_cue',units='deg', 
     size=[CUE_SIZE[0], CUE_SIZE[1]], vertices='circle',
@@ -357,16 +365,12 @@ end_text = visual.TextStim(win=win, name='end_text',
 
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
-# ------------- Functions for Eyetracker from sample scripts (with some adjustments)
 def abort_trial(trial_index = 0):
     # Returns None and clears the eyetracker
     el_tracker = pylink.getEYELINK()
     
     # Stop recording
-    if el_tracker.isRecording():
-        # add 100 ms to catch final trial events
-        pylink.pumpDelay(100)
-        el_tracker.stopRecording()
+    el_tracker.stopRecording()
 
     # Clear the psychopy window
     if win is not None:
@@ -400,7 +404,7 @@ def terminate_task():
     if win is not None:
         win.clearAutoDraw()
         win.flip()
-        
+    
     # Mark experiment as finished
     thisExp.status = FINISHED
     thisExp.abort()
@@ -442,8 +446,6 @@ def terminate_task():
     # quit PsychoPy
     core.quit()
     sys.exit()
-
-# ------------- Functions to run the task
 
 # Determine the opacity (location) of the cue based on the trial's cue condition
 def get_cue_opacity(cue_condition, gabor_position):
@@ -571,7 +573,7 @@ def run_trial(trial, trial_index, practice = False):
     kb_allKeys = []
     eye_used = None
     
-    components = [fix_cross, left_cue, right_cue, gabor, kb]
+    components = [fix_cross, andy_fix, left_cue, right_cue, gabor, kb]
     
     # Esure tracker is ready to receive commands
     el_tracker = pylink.getEYELINK()
@@ -635,20 +637,21 @@ def run_trial(trial, trial_index, practice = False):
     if practice: # Set Gabor contrast and orientation for practice trials
         intensity = pract_contrasts.pop(0)
         gabor.contrast = intensity
-    
+        
     if not practice: # Questplus algorithm will determine gabor contrast in exp trials
+        global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
         elif trial['cue_condition'] == 'Invalid':
             current_qp = qp_invalid
         elif trial['cue_condition'] == 'Neutral':
-            current_qp = qp_neutral  
+            current_qp = qp_neutral
         
         # Save threshold, slope, and lapse rate from QP to data file
         threshold = current_qp.param_estimate['threshold']
         slope = current_qp.param_estimate['slope']
         lapse_rate = current_qp.param_estimate['lapse_rate']
-
+        
         # Get next intensity from current staircase
         next_stim = current_qp.next_stim
         intensity = next_stim['intensity']
@@ -677,22 +680,19 @@ def run_trial(trial, trial_index, practice = False):
         tThisFlip = win.getFutureFlipTime(clock=routineTimer)
         tThisFlipGlobal = win.getFutureFlipTime(clock=None)
         frameN = frameN + 1
-#        print("CURRENT TIME = %s" % t *1000) #print the start time of each loop of this code (ms) 
         
-        # Draw white fixation cross at start of trial
+        # Draw fixation cross at start of trial for its set duration
         if fix_cross.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
-            fix_cross.color = 'white'
             draw_comp(fix_cross, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('fixation_started')
-        
-        # Make fixation cross green for 500ms in the middle of ITI, then white for remainder of the trial
-        if fix_cross.status == STARTED:
-            if tThisFlip >= 1.0-frameTolerance and tThisFlip < 1.5-frameTolerance:
-                fix_cross.color = 'green'
-            if tThisFlip >= 1.5-frameTolerance and tThisFlip < ITI-frameTolerance:
-                fix_cross.color = 'white'
-            if tThisFlipGlobal > fix_cross.tStartRefresh + TOTAL_TRIAL_DURATION-frameTolerance:
-                erase_comp(fix_cross, t, tThisFlipGlobal, frameN)
+        if fix_cross.status == STARTED and tThisFlipGlobal > fix_cross.tStartRefresh + FIX_CROSS_DUR-frameTolerance:
+            erase_comp(fix_cross, t, tThisFlipGlobal, frameN)
+            
+        # Draw Andy to signal start of trial. erase at the end of the trial
+        if andy_fix.status==NOT_STARTED and tThisFlip >= FIX_CROSS_DUR -frameTolerance:
+            draw_comp(andy_fix, t, tThisFlipGlobal, frameN)
+        if andy_fix.status==STARTED and tThisFlipGlobal > andy_fix.tStartRefresh+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW-frameTolerance:
+            erase_comp(andy_fix, t, tThisFlipGlobal, frameN)
         
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= GAZE_CHECK[1]-frameTolerance:
             if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
@@ -745,35 +745,33 @@ def run_trial(trial, trial_index, practice = False):
 #                print("maintained fixation")
                 
         # Draw the left and right cues (onset and offset is same for both)
-        if left_cue.status == NOT_STARTED and tThisFlip >= ITI-frameTolerance:
-            fix_cross.color = 'white'
+        if left_cue.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR-frameTolerance:
             draw_comp(left_cue, t, tThisFlipGlobal, frameN)
             draw_comp(right_cue, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('cue_started')
         
-        if left_cue.status == STARTED and tThisFlipGlobal > left_cue.tStartRefresh + CUE_DURATION-frameTolerance:
+        if left_cue.status == STARTED and tThisFlipGlobal > left_cue.tStartRefresh + CUE_DUR-frameTolerance:
             erase_comp(left_cue, t, tThisFlipGlobal, frameN)
             erase_comp(right_cue, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('cue_stopped')
 
-        # Draw gabors.
-        if gabor.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
+        # Draw target
+        if gabor.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
             draw_comp(gabor, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('target_started')
-
-        if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DURATION-frameTolerance:
+        if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DUR-frameTolerance:
             erase_comp(gabor, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('target_stopped')
         
         # Waiting for keyboard response.
         waitOnFlip = False
-        if kb.status == NOT_STARTED and tThisFlip >= (ITI+CUE_DURATION+ISI)-frameTolerance:
+        if kb.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
             draw_comp(kb, t, tThisFlipGlobal, frameN)
             waitOnFlip = True 
             win.callOnFlip(kb.clock.reset)  # t=0 on next screen flip
             win.callOnFlip(kb.clearEvents, eventType='keyboard')
         
-        if kb.status == STARTED and tThisFlipGlobal > kb.tStartRefresh + (TARGET_DURATION+RESPONSE_DURATION)-frameTolerance:
+        if kb.status == STARTED and tThisFlipGlobal > kb.tStartRefresh + (TARGET_DUR+RESPONSE_WINDOW)-frameTolerance:
             erase_comp(kb, t, tThisFlipGlobal, frameN)
             
         if kb.status == STARTED and not waitOnFlip: 
@@ -802,10 +800,7 @@ def run_trial(trial, trial_index, practice = False):
     for comp in components:
         if hasattr(comp, 'setAutoDraw'):
             comp.setAutoDraw(False)
-            
-    for i in range(len(sampleTimeList)):
-        print('Sample %s time = %s' % (i,sampleTimeList[i]))
-            
+
     # Add trial data to the data file
     thisExp.addData('gabor.intensity', intensity)
     thisExp.addData('gabor.pos', gabor.pos)
@@ -837,7 +832,7 @@ def run_trial(trial, trial_index, practice = False):
             feedback_image.draw()
             feedback_text.draw()
             win.flip()
-            core.wait(FEEDBACK_DURATION)
+            core.wait(FEEDBACK_DUR)
     else:
         response = 1 if (
             (kb.keys == '1' and trial['orientation'] == 0) or 
@@ -852,7 +847,7 @@ def run_trial(trial, trial_index, practice = False):
                 feedback_image.draw()
                 feedback_text.draw()
                 win.flip()
-                core.wait(FEEDBACK_DURATION)
+                core.wait(FEEDBACK_DUR)
         else:
             if practice:
                 feedback_text.text = "Try Again!"
@@ -860,7 +855,7 @@ def run_trial(trial, trial_index, practice = False):
                 feedback_image.draw()    
                 feedback_text.draw()
                 win.flip()
-                core.wait(FEEDBACK_DURATION)         
+                core.wait(FEEDBACK_DUR)         
 
     thisExp.addData('Keypress', kb.keys)
     thisExp.addData('Accuracy', response)
@@ -926,7 +921,7 @@ event.waitKeys(keyList=['space']) #Press space to continue to practice trials
 thisExp.addData('Instructions.stopped', globalClock.getTime(format='float'))
 thisExp.nextEntry()
 
-####### PRACTICE BLOCK #################################################################################################################################################################################################### 
+####### PRACTICE BLOCK 3 #################################################################################################################################################################################################### 
 
 repeat_count = 0
 repeat_practice = True
@@ -1001,6 +996,7 @@ for trial in trial_list:
 
     # Give break every interval and do a drift check to recalibrate if necessary
     if total_trials % BREAK_INTERVAL == 0: 
+        
         break_text.draw()
         win.flip()
         event.waitKeys(keyList=['space'])
