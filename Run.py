@@ -1,20 +1,17 @@
 # --- Import packages ---
-from psychopy import prefs
-from psychopy import plugins
+from psychopy import prefs, plugins, sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware, monitors
+from psychopy.constants import (NOT_STARTED, STARTED, STOPPED, FINISHED, PRESSED, RELEASED, FOREVER, priority)
 plugins.activatePlugins()
 prefs.hardware['audioLib'] = 'ptb'
 prefs.hardware['audioLatencyMode'] = '3'
-from psychopy import sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware, monitors
-from psychopy.constants import (NOT_STARTED, STARTED, PLAYING, PAUSED,
-                                STOPPED, FINISHED, PRESSED, RELEASED, FOREVER, priority)
 from psychopy.tools.monitorunittools import pix2deg
+from psychopy.hardware import keyboard
 import numpy as np 
 from numpy.random import random, randint, normal, shuffle, choice as randchoice
 from string import ascii_letters, digits
 import os
 import sys 
 import time
-from psychopy.hardware import keyboard
 from questplus import QuestPlus
 import pylink
 from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
@@ -23,45 +20,54 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 
 EYETRACKER_OFF = False # Set this variable to True to run the script without eyetracking
 current_qp = None # Setting global variable so then we can print posteriors at the end
+RESPONSE_KEYS = ['1', '2']
 
-TRIAL_REPETITIONS = 16 # How many times to repeat each of the 12 unique trial_types (total # trials = TRIAL_REPEITIONS * length(trial_types))
-PRACTRIALS_REPETITIONS = 1 # Same as above, but for practice trials
-MAX_REPEATS = 3 # Maximum number of consecutive trials of the same cue condition (valid, invalid, neutral)
-CUE_SIZE = [.5, .5] # deg
-TARGET_SIZE = [1.5, 1.5] # deg
-FIXATION_SIZE = [.5, .5] # deg
-POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity for target and cues
-GAZE_THRESHOLD = 2.5 # deg; if gaze shifts more than this from center, trial is aborted 
-SPATIAL_FREQUENCY = 5
-PRACT_CONTRASTS = [0.1, 0.5, 1.0] * 4  # Hardcoded contrast values for practice trials
-
-# Timing (s)
-frameTolerance = 0.001  # How close to onset before 'same' frame
-FIX_CROSS_DUR = 1 # (s) fixation cross before Andy
-ANDY_FIX_DUR = 1.5 # (s) Andy right before cue
-CUE_DUR = 0.05 # (s) 
-ISI = 0.05 # Andy between cue and target (s)
-TARGET_DUR = 0.1 # (s) 
-RESPONSE_WINDOW = 1.0 # (s) Andy displayed after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
-TOTAL_TRIAL_DUR = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW
-MAX_PRESENTATIONS = 3 # Maximum number of times each trial can be presented
-FEEDBACK_DUR = 1.0 # (s), for practice blocks
-GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR] # From cue onset to target offset
-MAX_BLINK_DUR = 0.2 # Maximum duration allowed for a blink (s)
-MAX_OUT_DUR = 0.1 # Maximum duration allowed out of bounds (s)
-
-# Create a dictionary of 12 unique trial types used to create practice and experiment trial lists
-trial_types = data.createFactorialTrialList({
+# get 12 unique trial types by combining the trial variables; e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'}
+TRIAL_TYPES = data.createFactorialTrialList({
             'orientation': [0, 90], # 0 - vertical; 90 - horizontal
             'gabor_position': [-1, 1], # -1 = Left, 1 = Right
             'cue_condition': ['Neutral', 'Invalid','Valid']  
-            }) 
+            })
+
+# practice blocks
+P1_TOTAL_TRIALS = 6 # total trials in practice block 1 (target on screen for unlimited time, trials are ended by experimenter)
+P2_TOTAL_TRIALS = 12 # total trials in practice block 2 (target on screen for extended duration)
+P3_TOTAL_TRIALS = 12 # total trials in practice block 3 (trial is the same as experiment blocks)
+PRACT_CONTRASTS = [0.1, 0.5, 1.0] * 4  # hardcoded possible gabor contrast values for practice trials
+EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
+
+# experiment blocks
+TRIAL_REPETITIONS = 16 # how many times to present each of the 12 unique TRIAL_TYPES in the experiment trials
+TOTAL_TRIALS = TRIAL_REPEITIONS * len(TRIAL_TYPES) # total number of experiment trials
+MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, invalid, neutral)
+MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented
+
+# stims (deg)
+CUE_SIZE = [.5, .5]
+TARGET_SIZE = [1.5, 1.5] 
+FIXATION_SIZE = [.5, .5] 
+POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity for target and cues
+GAZE_BOUNDS = 2.5 # if gaze shifts more than this from center, trial is aborted 
+GAZE_BOUNDS = 2.5 # if gaze shifts more than this from center, trial is aborted 
+SPATIAL_FREQUENCY = 5
+
+# timing (s)
+frameTolerance = 0.001  # How close to onset before 'same' frame
+FIX_CROSS_DUR = 1 # duration of fixation cross at start of trial
+ANDY_FIX_DUR = 1.5 # duration of andy fixation right before cue
+CUE_DUR = 0.05 # cue duration
+ISI = 0.05 # duration of andy fixation between cue and target 
+TARGET_DUR = 0.1 # target gabor duration for experiment trials
+RESPONSE_WINDOW = 1.0 # duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
+TOTAL_TRIAL_DUR = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW # total duration of 1 trial
+FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
+GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR] # time interval when eyetracker is checking gaze location; from cue onset to target offset
+#MAX_BLINK_DUR = 0.2 # Maximum duration allowed for a blink (s)
+#MAX_OUT_DUR = 0.1 # Maximum duration allowed out of bounds (s)
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
-# Eyetracker setup is based off of sample scripts provided by SR Research for psychopy coder
-
-# Collect participant ID, session number, number of blocks
+# Collect participant ID, session number, number of blocks and check that the inputted variables are valid
 exp_name = 'EnhancementTask'
 exp_info = {
     'Participant ID': '',
@@ -74,9 +80,10 @@ while True:
         core.quit()
         sys.exit()
 
-    blocks = int(exp_info['Blocks'])
-    # Clean participant ID
-    participant_id = exp_info['Participant ID'].rstrip().split(".")[0]
+    blocks = int(exp_info['Blocks']) # get number of blocks
+    
+    participant_id = exp_info['Participant ID']
+    #participant_id = exp_info['Participant ID'].rstrip().split(".")[0] # Clean participant ID
     edf_filename = f"{participant_id}_ET"
 
     # check if the filename and number of blocks are valid
@@ -84,29 +91,50 @@ while True:
     if not all([c in allowed_char for c in edf_filename]):
         raise ValueError('ERROR: Invalid EDF filename. Enter only letters, digits, or underscores.')
     elif len(edf_filename) > 8:
-        raise ValueError("ERROR: Invalid EDF filename: must be ≤5 characters.")
-    elif (TRIAL_REPETITIONS*len(trial_types))%blocks != 0:
-        raise ValueError("ERROR: Invalid number of blocks. Must be a factor of 192.")
+        raise ValueError("ERROR: Invalid EDF filename: participant ID must be ≤5 characters.")
+    elif (TOTAL_TRIALS)%blocks != 0:
+        raise ValueError(f"ERROR: Invalid number of blocks. Must be a factor of {TOTAL_TRIALS}.")
     else:
         break
 
-trials_per_block = (TRIAL_REPETITIONS*len(trial_types))/blocks # calculate number of trials in each block
+# Calculate number of trials in each block
+trials_per_block = (TRIAL_REPETITIONS*len(trial_types))/blocks
 print("Trials per block:", trials_per_block)
 
 # Establish data output directory
-time_str = time.strftime("_%m_%d_%Y", time.localtime())
+time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
 output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Session{exp_info['Session']}{time_str}")
 os.makedirs(output_folder, exist_ok=True)
-edf_path = os.path.join(output_folder, f"{edf_filename}_Session{exp_info['Session']}")
-
-# Set file name for psychopy task data (.csv, .psydat)
-filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Session{exp_info['Session']}") 
-
-# Create a file to log messages and warnings
+filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Session{exp_info['Session']}") # file for psychopy task data
+edf_path = os.path.join(output_folder, f"{edf_filename}_Session{exp_info['Session']}") # file for eyetracker data
 logFile = logging.LogFile(filename + '.log', level=logging.EXP)
-logging.console.setLevel(logging.WARNING)  # Warnings, errors, and critical messages will be displayed in output console
+logging.console.setLevel(logging.WARNING)  # set logging level: warnings, errors, and critical messages will be displayed in output console
 
-# Connect to the EyeLink Host PC
+# Window setup for EIZO monitor
+Eizo = monitors.Monitor('Eizo', width = 51.84, distance = 60)
+Eizo.setSizePix([1920, 1200])
+win = visual.Window(fullscr=True, color=[0,0,0],
+            size=Eizo.getSizePix(), screen=1,
+            winType='pyglet', allowStencil=False,
+            monitor=Eizo, colorSpace='rgb',
+            backgroundImage='', backgroundFit='none',
+            blendMode='avg', useFBO=False,
+            units='deg', 
+            checkTiming=False)
+            
+# Save frame rate to data file
+exp_info['frameRate'] = win.getActualFrameRate() 
+
+# Create an experiment handler
+thisExp = data.ExperimentHandler(
+    name=exp_name, version='',
+    extraInfo=exp_info, runtimeInfo=None,
+    originPath=os.path.abspath(__file__),
+    savePickle=True, saveWideText=True,
+    dataFileName=filename, 
+    sortColumns='time') 
+
+# -------------- Connect to the EyeLink Host PC; based on sample scripts from SR Research
 if EYETRACKER_OFF:
     el_tracker = pylink.EyeLink(None) # Need this line so code will run when not using eyetracking
 else:
@@ -160,18 +188,6 @@ el_tracker.sendCommand("link_sample_data = %s" % link_sample_flags)
 # Choose a calibration type (HV = horizontal/vertical) number is how many points on the screen
 el_tracker.sendCommand("calibration_type = HV5")
 
-# Window setup for EIZO monitor
-Eizo = monitors.Monitor('Eizo', width = 51.84, distance = 60)
-Eizo.setSizePix([1920, 1200])
-win = visual.Window(fullscr=True, color=[0,0,0],
-            size=Eizo.getSizePix(), screen=1,
-            winType='pyglet', allowStencil=False,
-            monitor=Eizo, colorSpace='rgb',
-            backgroundImage='', backgroundFit='none',
-            blendMode='avg', useFBO=False,
-            units='deg', 
-            checkTiming=False)
-
 # Get the screen resolution used by PsychoPy
 scn_width, scn_height = win.size # in retina pixels
 
@@ -205,24 +221,6 @@ genv.setCalibrationSounds('', '', '')
 # Request Pylink to use the PsychoPy window we opened above for calibration
 pylink.openGraphicsEx(genv)
 logging.info(f"Graphics environment set up: {genv}")
-
-# Store frame rate
-exp_info['frameRate'] = win.getActualFrameRate()
-if exp_info['frameRate'] is not None:
-    frameDur = 1.0 / round(exp_info['frameRate'])
-else:
-    frameDur = 1.0 / 60.0 # couldn't get a reliable measure so guess
-    print('Frame rate is unknown. Using frame duration of 1/60s.')
-exp_info['frameDur'] = frameDur   
-
-# Create an experiment handler
-thisExp = data.ExperimentHandler(
-    name=exp_name, version='',
-    extraInfo=exp_info, runtimeInfo=None,
-    originPath=os.path.abspath(__file__),
-    savePickle=True, saveWideText=True,
-    dataFileName=filename, 
-    sortColumns='time') 
 
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
@@ -366,10 +364,10 @@ end_text = visual.TextStim(win=win, name='end_text',
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
 def abort_trial(trial_index = 0):
-    # Returns None and clears the eyetracker
-    el_tracker = pylink.getEYELINK()
+    """ Ends trial and clears the eyetracker """
     
     # Stop recording
+    el_tracker = pylink.getEYELINK()
     el_tracker.stopRecording()
 
     # Clear the psychopy window
@@ -393,9 +391,11 @@ def abort_trial(trial_index = 0):
     return None
     
 def terminate_task():
-    """ Disconnects from the eyetracker and saves all data files """
+    """ Disconnects eyetracker, closes psychopy, and saves all data files """
     
     # Save task data
+    thisExp.nextEntry()
+    thisExp.addData('experiment.end', globalClock.getTime(format='float')
     thisExp.saveAsWideText(thisExp.dataFileName + '.csv', delim='auto')
     thisExp.saveAsPickle(thisExp.dataFileName)
     logging.flush()
@@ -407,10 +407,11 @@ def terminate_task():
     
     # Mark experiment as finished
     thisExp.status = FINISHED
+    print("Experiment ended.")
     thisExp.abort()
 
+    # Disconnect eyetracker
     el_tracker = pylink.getEYELINK()
-
     if el_tracker.isConnected():
         # Abort trial
         error = el_tracker.isRecording()
@@ -428,7 +429,7 @@ def terminate_task():
         el_tracker.closeDataFile()
 
         # Print a file transfer message
-        print('Task terminated. EDF data is transferring from EyeLink Host PC...')
+        print('EDF data is transferring from EyeLink Host PC...')
 
         # Download the EDF data file from the Host PC to a local data folder
         try:
@@ -440,15 +441,14 @@ def terminate_task():
         # Close the link to the tracker
         el_tracker.close()
 
-    # close the PsychoPy window
+    # quit psychopy
     win.close()
-
-    # quit PsychoPy
     core.quit()
     sys.exit()
 
-# Determine the opacity (location) of the cue based on the trial's cue condition
 def get_cue_opacity(cue_condition, gabor_position):
+    """ Returns the opacities of the left and right cues depending on the trial's cue condition. """
+    
     if cue_condition == 'Neutral': # show both cues
         return 1.0, 1.0 
     elif cue_condition == 'Valid': # show cue in same position as target gabor
@@ -462,33 +462,34 @@ def get_cue_opacity(cue_condition, gabor_position):
         else:
             return 0.0, 1.0
         
-# Check that trial list does not have more than MAX_REPEATS consecutive trials with the same cue condition
-def consecutive_check(all_trials, max_repeats=MAX_REPEATS):
+def consecutive_check(all_trials):
+    """ Checks the trial list to ensure that there are no more than MAX_CONSECUTIVE_TRIALS consecutive trials with the same cue condition """
     consecutive_count = 1
     if len(all_trials) < 2:
         return False
     for i in range(1, len(all_trials)):
         if all_trials[i]['cue_condition'] == all_trials[i - 1]['cue_condition']:
             consecutive_count += 1
-            if consecutive_count > max_repeats:
+            if consecutive_count > MAX_CONSECUTIVE_TRIALS:
                 return False  # Invalid trial list
         else:
             consecutive_count = 1
     return True  # Valid trial list
         
 # Get the full list of trials created by the handler
-def get_trials(repetitions):
-    trial_list = []
-    while consecutive_check(trial_list) == False:
-        handler = data.TrialHandler(nReps=repetitions, method='random', 
-            extraInfo=exp_info, originPath=-1,
-            trialList=trial_types,
-            seed=None, name='handler')
-        trial_sequence = handler.sequenceIndices 
-        trial_indices = trial_sequence.T.flatten().tolist()
-        trial_list = [dict(handler.trialList[i]) for i in trial_indices] 
-        for i, trial in enumerate(trial_list, start=1):
-            trial['Index'] = i
+def create_trial_list(block):
+    if block == 'exp':
+        trial_list = []
+        while consecutive_check(trial_list) == False:
+            handler = data.TrialHandler(nReps=TRIAL_REPETITIONS, method='random', 
+                extraInfo=exp_info, originPath=-1,
+                trialList=trial_types,
+                seed=None, name='handler')
+            trial_sequence = handler.sequenceIndices 
+            trial_indices = trial_sequence.T.flatten().tolist()
+            trial_list = [dict(handler.trialList[i]) for i in trial_indices] 
+            for i, trial in enumerate(trial_list, start=1):
+                trial['Index'] = i
     return trial_list
 
 def draw_comp(comp, t, tThisFlipGlobal, frameN):
@@ -530,7 +531,7 @@ def get_eye_used(el_tracker):
     print("ERROR: EyeLink not connected or invalid eye")
     return None
     
-def is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock, bounds_deg = GAZE_THRESHOLD, loss_threshold = 0.1):
+def is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock, bounds_deg = GAZE_BOUNDS, loss_threshold = 0.1):
     while True:
         sample = el_tracker.getNewestSample()
         
@@ -730,7 +731,7 @@ def run_trial(trial, trial_index, practice = False):
 #                    blink_started = False
 #
 #                # Check if gaze is out of bounds
-#                if abs(dx_deg) >= GAZE_THRESHOLD and abs(dy_deg) >= GAZE_THRESHOLD: # and or or? 
+#                if abs(dx_deg) >= GAZE_BOUNDS and abs(dy_deg) >= GAZE_BOUNDS: # and or or? 
 #                    print("Inside gaze threshold check")
 #                    if not out_started:
 #                        print("out clock reset")
@@ -929,7 +930,7 @@ while repeat_practice:
     repeat_count += 1
     total_correct = 0
 
-    trial_list = get_trials(PRACTRIALS_REPETITIONS)
+    trial_list = create_trial_list()
     
     for trial in trial_list:
         trial['presented'] = 0
@@ -979,7 +980,7 @@ thisExp.addData('Experiment.started', globalClock.getTime(format='float'))
 no_resp_trials = []
 total_trials = 0
 
-trial_list = get_trials(TRIAL_REPETITIONS)
+trial_list = create_trial_list()
 for trial in trial_list:
     trial['presented'] = 0 # start keeping track of how many times each trial has been presented 
 
@@ -1033,7 +1034,7 @@ while len(no_resp_trials) > 0:
         answer = run_trial(trial, trial['Index'])
         print(f"Experiment Trial {trial['Index']}:", trial)
 
-        if answer is None and trial['presented'] < MAX_PRESENTATIONS:
+        if answer is None and trial['presented'] < MAX_TRIAL_REPEATS:
             remaining_trials.append(trial)
 
     no_resp_trials = remaining_trials
