@@ -20,7 +20,7 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 
 globalClock = core.Clock() # initialize global clock
 
-EYETRACKER_OFF = False # Set this variable to True to run the script without eyetracking
+EYETRACKER_OFF = False # Set to True to run the script without eyetracking
 current_qp = None # Setting global variable so then we can print posteriors at the end
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
@@ -46,11 +46,12 @@ MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cu
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
 
 # stims (deg)
-CUE_SIZE = [.5, .5]
-TARGET_SIZE = [1.5, 1.5] 
-FIXATION_SIZE = [.5, .5] 
+CUE_SIZE = .5
+TARGET_SIZE = 1.5
+FIXCROSS_SIZE = .5
+ANDYFIX_SIZE = 1
 POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity for target and cues
-GAZE_BOUNDS = 2.5 # if gaze shifts more than this from center, trial is aborted 
+GAZE_BOUNDS = 2.5 # if gaze shifts more than this from fixation point, trial is aborted 
 SPATIAL_FREQUENCY = 5
 
 # timing (s)
@@ -67,7 +68,7 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
 # Collect participant ID, session number, number of blocks and check that the inputted variables are valid
-exp_name = 'EnhancementTask'
+exp_name = 'ZebraFliesTask'
 exp_info = {
     'Participant ID': '',
     'Session': '',
@@ -255,13 +256,13 @@ qp_neutral = QuestPlus(
     stim_scale='linear'
 )
 
-####### INITIALIZE TRIAL COMPONENTS #################################################################################################################################################################################################### 
+####### INITIALIZE EXPERIMENT TRIAL COMPONENTS #################################################################################################################################################################################################### 
 
 kb = keyboard.Keyboard()
 
 fix_cross = visual.ShapeStim(
     win=win, name='fix_cross', vertices='cross',units='deg', 
-    size=(FIXATION_SIZE[0], FIXATION_SIZE[1]),
+    size=(FIXCROSS_SIZE, FIXCROSS_SIZE),
     ori=0.0, pos=(0, 0), anchor='center',
     lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
     opacity=1.0, depth=0.0, interpolate=True)
@@ -269,24 +270,24 @@ andy_fix = visual.ImageStim(win=win,
     image = "images/andy_fixation.png",
     name='andy_fix', units='deg', 
     mask=None, ori=0, pos=(0, 0), 
-    size=[1,1],
+    size=(ANDYFIX_SIZE, ANDYFIX_SIZE),
     colorSpace='rgb')
 left_cue = visual.ShapeStim(
     win=win, name='left_cue',units='deg', 
-    size=[CUE_SIZE[0], CUE_SIZE[1]], vertices='circle',
-    ori=0.0, pos=[-POSITION[0], POSITION[1]], anchor='center',
+    size=(CUE_SIZE, CUE_SIZE), vertices='circle',
+    ori=0.0, pos=(-POSITION[0], POSITION[1]), anchor='center',
     lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
     opacity=1.0, depth=-1.0, interpolate=True)
 right_cue = visual.ShapeStim(
     win=win, name='right_cue',units='deg', 
-    size=[CUE_SIZE[0], CUE_SIZE[1]], vertices='circle',
-    ori=0.0, pos=[POSITION[0], POSITION[1]], anchor='center',
+    size=(CUE_SIZE, CUE_SIZE), vertices='circle',
+    ori=0.0, pos=(POSITION[0], POSITION[1]), anchor='center',
     lineWidth=1.0,     colorSpace='rgb',  lineColor='white', fillColor='white',
     opacity=1.0, depth=-1.0, interpolate=True)
 gabor = visual.GratingStim(
     win=win, name='gabor',units='deg', 
     tex='sin', mask='gauss', anchor='center',
-    ori=0.0, pos=[POSITION[0],POSITION[1]], size=[TARGET_SIZE[0], TARGET_SIZE[1]], sf=[SPATIAL_FREQUENCY], phase=0.0,
+    ori=0.0, pos=(POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=1.0, blendmode='avg',
     texRes=128.0, interpolate=True)
@@ -339,12 +340,9 @@ def abort_trial(trial_index = 0):
     # send a message to mark trial end
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_ERROR)
     
-    if thisExp.status != FINISHED:
-        print(f'Trial {trial_index} aborted.')
-        trial['presented'] += 1
-        thisExp.addData('presentations', trial['presented'])
-        thisExp.addData('trial.aborted', 'aborted')
-        thisExp.nextEntry()
+    print(f'Trial {trial_index} aborted.')
+    thisExp.addData('trial.aborted', 'aborted')
+    thisExp.nextEntry()
 
     return None
     
@@ -535,6 +533,49 @@ def is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock):
         
         return abs(dx_deg) <= GAZE_BOUNDS and abs(dy_deg) <= GAZE_BOUNDS
         
+def show_instructions(block_num=None):
+    """Display instructions based on block. """
+    
+    thisExp.addData('instructions.start', globalClock.getTime(format='float'))
+    instruct_text = visual.TextStim(win=win, name='instruct_text',
+    text="", font='Arial', units='deg', pos=(0, 0), draggable=False, 
+    height=1.2, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
+    opacity=1,languageStyle='LTR',depth=0.0)
+    
+    if block_num == 0:
+        instruct_text.text = '''Zebra flies are really shy!'''
+        instruct_text.draw()
+        win.flip()
+    elif block_num in (1, 2, 3):
+        instruct_text.text = f'''***PRACTICE LEVEL {block_num}***\n\n
+        Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
+        Press the left button if the zebra flies will move up and down, 
+        and the right button if the zebra flies will move side to side.'''
+        instruct_text.draw()
+        andy_fix.draw()
+        gabor_inst1.pos = (-5,0)
+        gabor_inst2.pos = (5,0)
+        gabor_inst1.draw()
+        gabor_inst2.draw()
+        win.flip()
+    else:
+        instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
+        Press the left button if the zebra flies will move up and down, 
+        and the right button if the zebra flies will move side to side.'''
+        instruct_text.draw()
+        andy_fix.draw()
+        gabor_inst1.pos = (-5,0)
+        gabor_inst2.pos = (5,0)
+        gabor_inst1.draw()
+        gabor_inst2.draw()
+        win.flip()
+
+    keys = event.waitKeys(keyList=['space', 'escape'])
+    if 'escape' in keys:
+        terminate_task()
+    elif 'space' in keys:
+        thisExp.addData('instructions.end', globalClock.getTime(format='float'))
+        return
 
 def run_trial(trial, practice = False, practice_contrasts = None, block_num = None):
     """ Run one trial. Returns response: 1- Correct; 0 - Incorrent; None - No response or trial aborted """
@@ -558,8 +599,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     # Mark start of trial
     trial_index = trial['index']
     trial['presented'] += 1
-    thisExp.addData('trial', trial_index)
     thisExp.addData('trial.start', globalClock.getTime(format='float'))
+    thisExp.addData('trial', trial_index)
     thisExp.addData('presentations', trial['presented'])
     
     # Set cue and target parameters 
@@ -574,14 +615,18 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
         if block_num == 1:
             TARGET_DUR = None # target on screen for unlimited amount of time
+            thisExp.addData('block','pract1')
         elif block_num == 2:
             TARGET_DUR = EXTENDED_TARGET_DUR
+            thisExp.addData('block','pract2')
         else:
             TARGET_DUR = EXP_TARGET_DUR
+            thisExp.addData('block','pract3')
             
     # Set QP algorithm logic for experiment trials
     else:
         TARGET_DUR = EXP_TARGET_DUR
+        thisExp.addData('block','exp')
         global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
@@ -699,7 +744,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         # Gaze tracking
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= (GAZE_CHECK[1] or float('inf')):
             if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
-                return abort_trial(trial_index)
+                return abort_trial(trial_index)     
         
         # Waiting for keyboard response.
         if kb.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
@@ -720,7 +765,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 continueRoutine = False 
                 break
                 
-            if not block_num == 1: # if not practice block 1, end trial after trial_dur if no key is pressed
+            if not (block_num == 1 or block_num == 0): # if not biofeedback or practice block 1, end trial after trial_dur if no key is pressed
                 if tThisFlip >= TRIAL_DUR - frameTolerance: 
                     continueRoutine = False
                     break
@@ -806,9 +851,41 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
     return response
     
+def run_biofeedback():
+    """Run biofeedback trial. Repeats if 'r' is pressed, ends when 'space' is pressed Can be repeated up to 12 times."""
+    
+    show_instructions(0)
+    
+    thisExp.addData(f'biofeedback.start', globalClock.getTime(format='float'))
+    trial_list = create_trial_list('practice')
+    practice_contrasts = PRACT_CONTRASTS * (PTOTAL_TRIALS//len(PRACT_CONTRASTS))
+    shuffle(practice_contrasts)
+    trial_index = 0
+    
+    while True:
+        response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=practice_contrasts, block_num = 1)
+        
+        prac_outcome_text.text = "The zebra fly flew away!"
+        prac_outcome_text.draw()
+        win.flip()
+        
+        keys = event.waitKeys(keyList=['r', 'space', 'escape'])
+        
+        for key in keys:
+            if key == 'escape':
+                terminate_task()
+            elif key == 'r': # show a different trial if r is pressed
+                trial_index +=1
+                break
+            elif key == 'space':
+                thisExp.addData(f'biofeedback.end', globalClock.getTime(format='float'))
+                return
+    
 def run_practice_block(block_num):
     """ Run all trials practice block. Must surpass accuracy threshold to move on. Experiment will terminate if accuracy threshold
         is not met within two tries. """
+        
+    show_instructions(block_num)
     
     accuracy = 0
     repeat_count = 0
@@ -846,16 +923,10 @@ def run_practice_block(block_num):
                 prac_outcome_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
-                instruct_text.draw()
-                gabor_inst1.draw()
-                gabor_inst2.draw()
-                thisExp.addData('instructions.start', globalClock.getTime(format='float'))
-                win.flip()
-                event.waitKeys(keyList=['space'])
-                thisExp.addData('instructions.end', globalClock.getTime(format='float'))
+                show_instructions(block_num)
                 
             elif repeat_count == 2:
-                print("Practice block failed twice. Ending experiment.")
+                print(f"Practice block {block_num} failed twice. Ending experiment.")
                 end_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
@@ -877,7 +948,7 @@ thisExp.status = STARTED
 
 # Window needs to be flipped before trying to run calibration or else code won't run
 welcome_text = visual.TextStim(win=win, name='welcome_text',
-    text='''Welcome to the Line Grate Game!''',
+    text='''Welcome to the Zebra Flies Game!''',
     font='Arial', units='deg', 
     pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
@@ -885,7 +956,7 @@ welcome_text = visual.TextStim(win=win, name='welcome_text',
 welcome_text.draw()
 win.flip()
 
-# Calibrate eyetracker
+# Calibrate eyetracker if on
 if not EYETRACKER_OFF:
     thisExp.addData('calibration.start', globalClock.getTime(format='float'))
     try:
@@ -894,49 +965,78 @@ if not EYETRACKER_OFF:
         print('ERROR:', err)
         el_tracker.exitCalibration()
     thisExp.addData('calibration.end', globalClock.getTime(format='float'))
+else:
+    keys = event.waitKeys(keyList=['space', 'escape'])
+    if 'escape' in keys:
+        terminate_task()
+    elif 'space' in keys:
+        thisExp.addData('welcome.end', globalClock.getTime(format='float'))
 
 ####### INSTRUCTIONS  #################################################################################################################################################################################################### 
 
-instruct_text = visual.TextStim(win=win, name='instruct_text',
-    text='''In this game, you will see line grates like these:\n\n\n\n
-    Your job is to determine which way the lines are pointing!\n\nPress the left button if the lines are pointing up and down, 
-    and the right button if the lines are pointing side to side.''',
-    font='Arial', units='height', pos=(0, 0), draggable=False, 
-    height=0.04, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
-    opacity=1,languageStyle='LTR',depth=0.0)
+# Andy screen
+andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
+    color='black', colorSpace='rgb')
+andy_text.draw()
+andy_fix.draw()
+win.flip()
+keys = event.waitKeys(keyList=['space', 'escape'])
+if 'escape' in keys:
+    terminate_task()
+    
+# Gabors screen
+gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies these!\n\n\n\n\n\n\n\n\n\nBut they're too fast for him to catch.", 
+    font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
+    color='black', colorSpace='rgb')
 gabor_inst1 = visual.GratingStim(
     win=win, name='gabor_inst1',units='deg', 
     tex='sin', mask='gauss', anchor='center',
-    ori=90, pos=[5,2], size=[4,4], sf=[SPATIAL_FREQUENCY], phase=0.0,
+    ori=90, pos=(5,2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=1.0, blendmode='avg',
     texRes=128.0, interpolate=True, depth=-2.0)
 gabor_inst2 = visual.GratingStim(
     win=win, name='gabor_inst2',units='deg', 
     tex='sin', mask='gauss', anchor='center',
-    ori=0.0, pos=[-5,2], size=[4,4], sf=[SPATIAL_FREQUENCY], phase=0.0,
+    ori=0.0, pos=(-5,2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=1.0, blendmode='avg',
+    opacity=1.0, contrast=0.5, blendmode='avg',
     texRes=128.0, interpolate=True, depth=-2.0)
-instruct_text.draw()
+gabor_inst3 = visual.GratingStim(
+    win=win, name='gabor_inst3',units='deg', 
+    tex='sin', mask='gauss', anchor='center',
+    ori=90, pos=(-5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
+    color=[1,1,1], colorSpace='rgb',
+    opacity=1.0, contrast=0.1, blendmode='avg',
+    texRes=128.0, interpolate=True, depth=-2.0)
+gabor_inst4 = visual.GratingStim(
+    win=win, name='gabor_inst4',units='deg', 
+    tex='sin', mask='gauss', anchor='center',
+    ori=0.0, pos=(5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
+    color=[1,1,1], colorSpace='rgb',
+    opacity=1.0, contrast=0.8, blendmode='avg',
+    texRes=128.0, interpolate=True, depth=-2.0)
+gabors_text.draw()
 gabor_inst1.draw()
 gabor_inst2.draw()
+gabor_inst3.draw()
+gabor_inst4.draw()
 win.flip()
-thisExp.addData('instructions.start', globalClock.getTime(format='float'))
-
 keys = event.waitKeys(keyList=['space', 'escape'])
 if 'escape' in keys:
     terminate_task()
 
-thisExp.addData('instructions.end', globalClock.getTime(format='float'))
+# Instruction text screen
+show_instructions()
 
 ####### PRACTICE BLOCKS #################################################################################################################################################################################################### 
 
+run_biofeedback() # one trial for pts to look at gabor patch, can be repeated by pressing 'r'
 run_practice_block(1) # unlimited amount of time for pt to answer, trial ends with experimenter pressing space
 run_practice_block(2) # target presented for extended time
 run_practice_block(3) # exactly like experiment trials
     
-####### EXPERIMENT BLOCK #################################################################################################################################################################################################### 
+####### EXPERIMENT BLOCKS #################################################################################################################################################################################################### 
 
 # Reset variables and generate the trial list
 no_resp_trials = []
