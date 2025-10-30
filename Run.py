@@ -327,6 +327,7 @@ def abort_trial(trial_index = 0):
     
     # Stop recording
     el_tracker = pylink.getEYELINK()
+    pylink.pumpDelay(100) # add 100 ms to catch final trial events
     el_tracker.stopRecording()
 
     # Clear the psychopy window
@@ -374,30 +375,24 @@ def terminate_task():
             error = el_tracker.isRecording()
             if error == pylink.TRIAL_OK:
                 abort_trial()
-
             # Put tracker in Offline mode
             el_tracker.setOfflineMode()
-
             # Clear the Host PC screen and wait for 500 ms
             el_tracker.sendCommand('clear_screen 0')
             pylink.msecDelay(500)
-
             # Close the edf data file on the Host
             el_tracker.closeDataFile()
-
             # Print a file transfer message
             print('EDF data is transferring from EyeLink Host PC...')
-
             # Download the EDF data file from the Host PC to a local data folder
             try:
                 el_tracker.receiveDataFile(edf_filename, edf_path)
                 print(f"EDF file saved to: {edf_path}")
             except RuntimeError as error:
                 print('ERROR downloading EDF file:', error)
-
             # Close the link to the tracker
             el_tracker.close()
-
+            
     # quit psychopy
     win.close()
     core.quit()
@@ -432,7 +427,7 @@ def consecutive_check(trial_list):
         else:
             consecutive_count = 1
     return True  # Valid trial list
-        
+
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
     """ Create the trial list for the block """
@@ -485,7 +480,7 @@ def get_eye_used(el_tracker):
     """ Gets eye used. Returns 0 for left, 1 for right, None if eye data cannot be collected.t"""
     if EYETRACKER_OFF:
         return 0 # For when running without eyetracking
-
+        
     if el_tracker is not None and el_tracker.isConnected():
         eye = el_tracker.eyeAvailable()
         if eye in [0, 1]:
@@ -532,7 +527,7 @@ def is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock):
         dx_deg, dy_deg = pix2deg(pixels, monitor=Eizo)
         
         return abs(dx_deg) <= GAZE_BOUNDS and abs(dy_deg) <= GAZE_BOUNDS
-        
+
 def show_instructions(block_num=None):
     """Display instructions based on block. """
     
@@ -553,8 +548,8 @@ def show_instructions(block_num=None):
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
-        gabor_inst1.pos = (-5,0)
-        gabor_inst2.pos = (5,0)
+        gabor_inst1.pos = (5,0)
+        gabor_inst2.pos = (-5,0)
         gabor_inst1.draw()
         gabor_inst2.draw()
         win.flip()
@@ -564,8 +559,8 @@ def show_instructions(block_num=None):
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
-        gabor_inst1.pos = (-5,0)
-        gabor_inst2.pos = (5,0)
+        gabor_inst1.pos = (5,0)
+        gabor_inst2.pos = (-5,0)
         gabor_inst1.draw()
         gabor_inst2.draw()
         win.flip()
@@ -649,7 +644,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
     # Gaze check setup
     if TARGET_DUR is not None:
-        GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR] # time interval when eyetracker is checking gaze location; from cue onset to target offset
+        GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW] # gaze check starts at cue onset
         TRIAL_DUR = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW
     else: # for practice block 1, indefinite tracking
         GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR, None]
@@ -720,6 +715,11 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             erase_comp(fix_cross, t, tThisFlipGlobal, frameN)
             draw_comp(andy_fix, t, tThisFlipGlobal, frameN)
             
+        # Gaze tracking
+        if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= (GAZE_CHECK[1] or float('inf')):
+            if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
+                return abort_trial(trial_index)
+                
         # Draw the left and right cues (onset and offset is same for both)
         if left_cue.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR-frameTolerance:
             draw_comp(left_cue, t, tThisFlipGlobal, frameN)
@@ -729,7 +729,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             erase_comp(left_cue, t, tThisFlipGlobal, frameN)
             erase_comp(right_cue, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('cue_stopped')
-
+            
         # Draw target
         if gabor.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
             draw_comp(gabor, t, tThisFlipGlobal, frameN)
@@ -740,11 +740,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DUR -frameTolerance:
                 erase_comp(gabor, t, tThisFlipGlobal, frameN)
                 el_tracker.sendMessage('target_stopped')
-                
-        # Gaze tracking
-        if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= (GAZE_CHECK[1] or float('inf')):
-            if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
-                return abort_trial(trial_index)     
         
         # Waiting for keyboard response.
         if kb.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
@@ -854,8 +849,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
 def run_biofeedback():
     """Run biofeedback trial. Repeats if 'r' is pressed, ends when 'space' is pressed Can be repeated up to 12 times."""
     
-    show_instructions(0)
-    
     thisExp.addData(f'biofeedback.start', globalClock.getTime(format='float'))
     trial_list = create_trial_list('practice')
     practice_contrasts = PRACT_CONTRASTS * (PTOTAL_TRIALS//len(PRACT_CONTRASTS))
@@ -863,6 +856,8 @@ def run_biofeedback():
     trial_index = 0
     
     while True:
+        show_instructions(0)
+        
         response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=practice_contrasts, block_num = 1)
         
         prac_outcome_text.text = "The zebra fly flew away!"
@@ -993,7 +988,7 @@ gabor_inst1 = visual.GratingStim(
     tex='sin', mask='gauss', anchor='center',
     ori=90, pos=(5,2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=1.0, blendmode='avg',
+    opacity=1.0, contrast=0.5, blendmode='avg',
     texRes=128.0, interpolate=True, depth=-2.0)
 gabor_inst2 = visual.GratingStim(
     win=win, name='gabor_inst2',units='deg', 
@@ -1007,14 +1002,14 @@ gabor_inst3 = visual.GratingStim(
     tex='sin', mask='gauss', anchor='center',
     ori=90, pos=(-5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.1, blendmode='avg',
+    opacity=1.0, contrast=0.8, blendmode='avg',
     texRes=128.0, interpolate=True, depth=-2.0)
 gabor_inst4 = visual.GratingStim(
     win=win, name='gabor_inst4',units='deg', 
     tex='sin', mask='gauss', anchor='center',
     ori=0.0, pos=(5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.8, blendmode='avg',
+    opacity=1.0, contrast=0.2, blendmode='avg',
     texRes=128.0, interpolate=True, depth=-2.0)
 gabors_text.draw()
 gabor_inst1.draw()
@@ -1037,6 +1032,9 @@ run_practice_block(2) # target presented for extended time
 run_practice_block(3) # exactly like experiment trials
     
 ####### EXPERIMENT BLOCKS #################################################################################################################################################################################################### 
+
+# Instruction text screen before experiment trials
+show_instructions()
 
 # Reset variables and generate the trial list
 no_resp_trials = []
@@ -1117,8 +1115,20 @@ while len(no_resp_trials) > 0:
 
 ####### END EXPERIMENT #################################################################################################################################################################################################### 
 
-end_text.draw()
-win.flip()
-event.waitKeys(keyList=['space'])
+# End screen of Andy jumping up and down
+amplitude = 2.0
+speed = 0.8 
+andy_fix.size = (7,7)
+end_text.pos = (0,-6)
 
-terminate_task()
+while True:
+    t= globalClock.getTime()
+    jump_y = abs(np.sin(2*np.pi*speed*t))*amplitude
+    andy_fix.pos = (0, jump_y)
+    
+    andy_fix.draw()
+    end_text.draw()
+    win.flip()
+    
+    if 'space' in event.getKeys():
+        terminate_task()
