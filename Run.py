@@ -980,7 +980,7 @@ if 'escape' in keys:
     terminate_task()
     
 # Gabors screen
-gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies these!\n\n\n\n\n\n\n\n\n\nBut they're too fast for him to catch.", 
+gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\nBut they're too fast for him to catch.", 
     font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
 gabor_inst1 = visual.GratingStim(
@@ -1045,8 +1045,8 @@ for trial in trial_list:
     if response is None:
         no_resp_trials.append(trial)  
 
-    # Give break every interval and do a drift check to recalibrate if necessary
-    if trial['index'] % trials_per_block == 0: 
+    # At every break interval, do a drift check to recalibrate if necessary
+    if trial['index'] % trials_per_block == 0 and trial['index'] != TOTAL_TRIALS: 
         
         break_text.draw()
         win.flip()
@@ -1081,8 +1081,8 @@ while len(no_resp_trials) > 0:
         thisExp.addData('trial', trial_num)
         trial_count = TOTAL_TRIALS + 1
         
-        # Give break every interval and do a drift check to recalibrate if necessary
-        if trial_count % trials_per_block == 0: 
+        # At every break interval, do a drift check to recalibrate if necessary
+        if trial_count % trials_per_block == 0 and len(no_resp_trials)>1: 
             
             break_text.draw()
             win.flip()
@@ -1122,7 +1122,7 @@ andy_fix.size = (7,7)
 end_text.pos = (0,-6)
 
 while True:
-    t= globalClock.getTime()
+    t = globalClock.getTime()
     jump_y = abs(np.sin(2*np.pi*speed*t))*amplitude
     andy_fix.pos = (0, jump_y)
     
@@ -1130,5 +1130,7 @@ while True:
     end_text.draw()
     win.flip()
     
-    if 'space' in event.getKeys():
+    keys = event.getKeys(keyList=['escape'])
+    if 'escape' in keys:
         terminate_task()
+        break
