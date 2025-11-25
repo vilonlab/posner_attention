@@ -24,28 +24,28 @@ EYETRACKER_OFF = False # Set to True to run the script without eyetracking
 current_qp = None # Setting global variable so then we can print posteriors at the end
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
-# get 12 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
+# get 6 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
 TRIAL_TYPES = data.createFactorialTrialList({
             'orientation': [0, 90], # 0 - vertical; 90 - horizontal
             'gabor_position': [-1, 1], # -1 = Left, 1 = Right
-            'cue_condition': ['Neutral', 'Invalid','Valid']  
+            'cue_condition': ['Neutral', 'Valid']  
             })
 
 # practice blocks
-PTRIAL_PRESENTATIONS = 1 # how many times to present each of the 12 unique TRIAL_TYPES in each practice block
+PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in each practice block
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks
-PRACT_CONTRASTS = [0.1, 0.5, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 12
+PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
 EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
-ACCURACY_THRESHOLD = 66 # accuracy needed to pass the practice blocks
+ACCURACY_THRESHOLD = 68 # accuracy needed to pass the practice blocks (5/8 correct)
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
-TRIAL_PRESENTATIONS =  16 # how many times to present each of the 12 unique TRIAL_TYPES throughout all experiment blocks
+TRIAL_PRESENTATIONS =  16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
-MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, invalid, neutral)
+MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, neutral)
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
 
-# stims (deg)222
+# stims (deg)
 CUE_SIZE = .5
 TARGET_SIZE = 1.5
 FIXCROSS_SIZE = .5
@@ -225,7 +225,7 @@ logging.info(f"Graphics environment set up: {genv}")
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
 param_domain = {
     'threshold': np.arange(0.01, 1, 0.01),
-    'slope': np.arange(2, 5, 1),
+    'slope': 3.5,
     'lower_asymptote': 0.5, # Equal to chance
     'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
@@ -233,14 +233,6 @@ outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fix
 
 # *THREE* QuestPlus staircases - one for each condition
 qp_valid = QuestPlus(
-    stim_domain=stim_domain,
-    param_domain=param_domain,
-    outcome_domain=outcome_domain,
-    func='weibull',
-    stim_scale='linear'
-)
-
-qp_invalid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
     outcome_domain=outcome_domain,
@@ -408,12 +400,7 @@ def get_cue_opacity(cue_condition, gabor_position):
             return 1.0, 0.0 
         else:
             return 0.0, 1.0
-    elif cue_condition == 'Invalid': # show cue in opposite position as target gabor
-        if gabor_position == 1:
-            return 1.0, 0.0
-        else:
-            return 0.0, 1.0
-        
+
 def consecutive_check(trial_list):
     """ Checks the trial list to ensure that there are no more than MAX_CONSECUTIVE_TRIALS consecutive trials with the same cue condition """
     consecutive_count = 1
@@ -628,8 +615,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
-        elif trial['cue_condition'] == 'Invalid':
-            current_qp = qp_invalid
         elif trial['cue_condition'] == 'Neutral':
             current_qp = qp_neutral
         
