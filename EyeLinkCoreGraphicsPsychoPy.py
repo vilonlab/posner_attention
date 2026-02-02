@@ -167,9 +167,9 @@ class EyeLinkCoreGraphicsPsychoPy(pylink.EyeLinkCustomDisplay):
         # Configure calibration sounds (beeps), use ".wav" files
         if not DISABLE_AUDIO:
             try:
-                self._target_beep = Sound('type.wav', stereo=True)
-                self._error_beep = Sound('error.wav', stereo=True)
-                self._done_beep = Sound('qbeep.wav', stereo=True)
+                self._target_beep = Sound('sounds/type.wav', stereo=True)
+                self._error_beep = Sound('sounds/error.wav', stereo=True)
+                self._done_beep = Sound('sounds/qbeep.wav', stereo=True)
             except Exception as e:
                 print ('Failed to load audio: '+ str(e))
                 #we failed to load audio, so disable it

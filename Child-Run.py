@@ -7,6 +7,7 @@ prefs.hardware['audioLatencyMode'] = '3'
 from psychopy.tools.monitorunittools import pix2deg
 from psychopy.hardware import keyboard
 import numpy as np 
+import math
 from numpy.random import random, randint, normal, shuffle, choice as randchoice
 from string import ascii_letters, digits
 import os
@@ -16,6 +17,7 @@ from questplus import QuestPlus
 import pylink
 from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 
+
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 globalClock = core.Clock() # initialize global clock
@@ -24,7 +26,7 @@ EYETRACKER_OFF = False # Set to True to run the script without eyetracking
 current_qp = None # Setting global variable so then we can print posteriors at the end
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
-# get 6 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
+# get 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
 TRIAL_TYPES = data.createFactorialTrialList({
             'orientation': [0, 90], # 0 - vertical; 90 - horizontal
             'gabor_position': [-1, 1], # -1 = Left, 1 = Right
@@ -33,7 +35,8 @@ TRIAL_TYPES = data.createFactorialTrialList({
 
 # practice blocks
 PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in each practice block
-PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks
+PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks 2 and 3
+PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
 PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
 EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
 ACCURACY_THRESHOLD = 68 # accuracy needed to pass the practice blocks (5/8 correct)
@@ -47,11 +50,11 @@ MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented afte
 
 # stims (deg)
 CUE_SIZE = .5
-TARGET_SIZE = 1.5
-FIXCROSS_SIZE = .5
-ANDYFIX_SIZE = 1
-POSITION = np.array([5.0, 0.0]) # 5DVA eccentricity for target and cues
-GAZE_BOUNDS = 2.5 # if gaze shifts more than this from fixation point, trial is aborted 
+TARGET_SIZE = 2
+FIXCROSS_SIZE = 0.75
+ANDYFIX_SIZE = 1.5
+POSITION = np.array([6.0, 0.0]) # DVA eccentricity for target and cues
+GAZE_BOUNDS = 3 # if gaze shifts more than this from fixation point, trial is aborted 
 SPATIAL_FREQUENCY = 5
 
 # timing (s)
@@ -67,11 +70,11 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
-# Collect participant ID, session number, number of blocks and check that the inputted variables are valid
+# Collect participant ID, visit number, number of blocks and check that the inputted variables are valid
 exp_name = 'ZebraFliesTask'
 exp_info = {
     'Participant ID': '',
-    'Session': '',
+    'Visit': '',
     'Blocks':'Ex. 4,6,8'}
 while True:
     dlg = gui.DlgFromDict(dictionary=exp_info, title=exp_name)
@@ -101,15 +104,18 @@ print("Trials per block:", trials_per_block)
 
 # Establish data output directory
 time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
-output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Session{exp_info['Session']}{time_str}")
+output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}{time_str}")
 os.makedirs(output_folder, exist_ok=True)
-filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Session{exp_info['Session']}") # file for psychopy task data
-edf_path = os.path.join(output_folder, f"{edf_filename}_Session{exp_info['Session']}") # file for eyetracker data
+filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}") # file for psychopy task data
+edf_path = os.path.join(output_folder, f"{edf_filename}.EDF") # file for eyetracker data
 logFile = logging.LogFile(filename + '.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # set logging level: warnings, errors, and critical messages will be displayed in output console
 
 # Window setup for EIZO monitor
-Eizo = monitors.Monitor('Eizo', width = 51.84, distance = 60)
+view_dist_cm = 60
+screen_w_cm = 51.84
+screen_w_px = 1920
+Eizo = monitors.Monitor('Eizo', width = screen_w_cm, distance = view_dist_cm)
 Eizo.setSizePix([1920, 1200])
 win = visual.Window(fullscr=True, color=[0,0,0],
             size=Eizo.getSizePix(), screen=1,
@@ -117,9 +123,17 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             monitor=Eizo, colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=False,
-            units='deg', 
-            checkTiming=False)
-            
+            units='deg', checkTiming=False)
+ 
+# Get the screen resolution used by PsychoPy
+scn_width, scn_height = win.size # in retina pixels
+
+# Calculate host PC pixel conversions
+host_x = int(scn_width//2)
+host_y = int(scn_height//2)
+px_per_cm = screen_w_px / screen_w_cm
+px_per_dva = px_per_cm * (2 * view_dist_cm * math.tan(math.radians(0.5)))
+
 # Save frame rate to data file
 exp_info['frameRate'] = win.getActualFrameRate() 
 
@@ -144,9 +158,8 @@ else:
         sys.exit()
         
 # Open the EDF data file on the Host PC
-edf_file = edf_filename + ".EDF"
 try:
-    el_tracker.openDataFile(edf_file)
+    el_tracker.openDataFile(edf_filename)
 except RuntimeError as err:
     print('ERROR:', err)
     # close the link if we have one open
@@ -186,9 +199,6 @@ el_tracker.sendCommand("link_sample_data = %s" % link_sample_flags)
 # Choose a calibration type (HV = horizontal/vertical) number is how many points on the screen
 el_tracker.sendCommand("calibration_type = HV5")
 
-# Get the screen resolution used by PsychoPy
-scn_width, scn_height = win.size # in retina pixels
-
 # Pass the display pixel coordinates (left, top, right, bottom) to the tracker
 el_coords = "screen_pixel_coords = 0 0 %d %d" % (scn_width - 1, scn_height - 1)
 el_tracker.sendCommand(el_coords)
@@ -214,7 +224,7 @@ genv.setPictureTarget(os.path.join(os.path.dirname(os.path.abspath(__file__)), '
 #     good -- sound to play on successful operation
 #     error -- sound to play on failure or interruption
 # Each parameter could be ''--default sound, 'off'--no sound, or a wav file
-genv.setCalibrationSounds('boing.wav', '', '')
+genv.setCalibrationSounds('sounds/boing.wav', '', '')
 
 # Request Pylink to use the PsychoPy window we opened above for calibration
 pylink.openGraphicsEx(genv)
@@ -231,7 +241,7 @@ param_domain = {
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
-# *THREE* QuestPlus staircases - one for each condition
+# *TWO* QuestPlus staircases - one for each condition
 qp_valid = QuestPlus(
     stim_domain=stim_domain,
     param_domain=param_domain,
@@ -378,7 +388,7 @@ def terminate_task():
             print('EDF data is transferring from EyeLink Host PC...')
             # Download the EDF data file from the Host PC to a local data folder
             try:
-                el_tracker.receiveDataFile(edf_file, edf_path)
+                el_tracker.receiveDataFile(edf_filename, edf_path)
                 print(f"EDF file saved to: {edf_path}")
             except RuntimeError as error:
                 print('ERROR downloading EDF file:', error)
@@ -418,7 +428,9 @@ def consecutive_check(trial_list):
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
     """ Create the trial list for the block """
-    if block_type == 'practice':
+    if block_type == 'practice1':
+        reps = 1
+    elif block_type == 'practice':
         reps = PTRIAL_PRESENTATIONS
     elif block_type == 'experiment':
         reps = TRIAL_PRESENTATIONS
@@ -524,6 +536,21 @@ def show_instructions(block_num=None):
     height=1.2, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
     opacity=1,languageStyle='LTR',depth=0.0)
     
+    gabor_inst1 = visual.GratingStim(
+        win=win, name='gabor_inst1',units='deg', 
+        tex='sin', mask='gauss', anchor='center',
+        ori=90, pos=(5,0), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
+        color=[1,1,1], colorSpace='rgb',
+        opacity=1.0, contrast=0.5, blendmode='avg',
+        texRes=128.0, interpolate=True, depth=-2.0)
+    gabor_inst2 = visual.GratingStim(
+        win=win, name='gabor_inst2',units='deg', 
+        tex='sin', mask='gauss', anchor='center',
+        ori=0.0, pos=(-5,0), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
+        color=[1,1,1], colorSpace='rgb',
+        opacity=1.0, contrast=0.5, blendmode='avg',
+        texRes=128.0, interpolate=True, depth=-2.0)
+        
     if block_num == 0:
         instruct_text.text = '''Zebra flies are really shy!'''
         instruct_text.draw()
@@ -535,8 +562,6 @@ def show_instructions(block_num=None):
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
-        gabor_inst1.pos = (5,0)
-        gabor_inst2.pos = (-5,0)
         gabor_inst1.draw()
         gabor_inst2.draw()
         win.flip()
@@ -546,8 +571,6 @@ def show_instructions(block_num=None):
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
-        gabor_inst1.pos = (5,0)
-        gabor_inst2.pos = (-5,0)
         gabor_inst1.draw()
         gabor_inst2.draw()
         win.flip()
@@ -640,6 +663,19 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     el_tracker = pylink.getEYELINK()
     el_tracker.setOfflineMode()
     el_tracker.sendCommand('clear_screen 0')
+ 
+    # draw cross at fixation point on the host pc; params: x y size (pix)
+    el_tracker.sendCommand(f'draw_cross {host_x} {host_y} 10')
+    
+    # draw box of gaze boundary; params: x1 y1 x2 y2 color <- coordinates are for opposite points on the box
+    half_gaze_bound = min(200, max(1, int(round(GAZE_BOUNDS * px_per_dva / 2)))) 
+    el_tracker.sendCommand(f'draw_box {host_x-half_gaze_bound} {host_y-half_gaze_bound} '
+        f'{host_x+half_gaze_bound} {host_y+half_gaze_bound} 1')
+        
+    #draw cross at cue/target locations
+    dx = int(round(POSITION[0] * px_per_dva))
+    el_tracker.sendCommand(f'draw_cross {host_x-dx} {host_y} 10')
+    el_tracker.sendCommand(f'draw_cross {host_x+dx} {host_y} 10')
     
     # Print trial number on eyelink host monitor and output console
     if practice:
@@ -679,11 +715,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         el_tracker.sendMessage('tracker_disconnected')
         print("Tracker disconnected - aborting trial.")
         return abort_trial
-        
-#    # Set image of visual markers are background of host PC
-#    el_tracker.imageBackdrop("C:/Users/andlab.AS-LF315-1/Documents/Experiments/ZebraFliesTask/Images/taskMarkers.png",
-#                             0, 0, scn_width, scn_height, 0, 0,
-#                             pylink.BX_MAXCONTRAST)
     # ------------------------------------------------------------------------
 
     sampleTimeList = list()
@@ -766,6 +797,9 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         if hasattr(comp, 'setAutoDraw'):
             comp.setAutoDraw(False)
             
+    # Add trial end time to data file
+    thisExp.addData('trial.end', globalClock.getTime(format='float'))
+    
     # Response check and feedback 
     if key_name is None:  # No response was made, do not update qp, show feedback in practice blocks
         response = None
@@ -832,7 +866,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     
     # Send trial result message to mark the end of the trial
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_OK)
-    thisExp.addData('trial.end', globalClock.getTime(format='float'))
     thisExp.nextEntry() # Advance to the next row in the data file
         
     return response
@@ -876,24 +909,24 @@ def run_practice_block(block_num):
     accuracy = 0
     repeat_count = 0
     
-    while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+    if block_num == 1:
         thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
         correct_count = 0
-        repeat_count +=1
+        repeat_count +=1 
         
-        trial_list = create_trial_list('practice')
+        trial_list = create_trial_list('practice1')
         
-        practice_contrasts = PRACT_CONTRASTS * (PTOTAL_TRIALS//len(PRACT_CONTRASTS))
-        shuffle(practice_contrasts)
+        practice_contrasts = [PRACT1_CONTRASTS]*len(TRIAL_TYPES)
         
         for trial in trial_list:
-            response = run_trial(trial, practice = True, practice_contrasts =practice_contrasts, block_num = block_num)
+            response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
             if response is not None:
                 correct_count += response
-                
-        accuracy = (correct_count/PTOTAL_TRIALS)*100
+            event.waitKeys(keyList=['space'])
+            
+        accuracy = (correct_count/len(trial_list))*100
         print(f"Practice block {block_num}, try {repeat_count}, accuracy: {accuracy}")
-        
+            
         if accuracy >= ACCURACY_THRESHOLD:
             prac_outcome_text.text = "Great Job!\n\nReady for the next level?"
             print(f"Practice block {block_num} passed!")
@@ -920,6 +953,51 @@ def run_practice_block(block_num):
             
         thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
     
+    elif block_num != 1:
+        while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
+            correct_count = 0
+            repeat_count +=1
+            
+            trial_list = create_trial_list('practice')
+            
+            practice_contrasts = PRACT_CONTRASTS * (PTOTAL_TRIALS//len(PRACT_CONTRASTS))
+            shuffle(practice_contrasts)
+            
+            for trial in trial_list:
+                response = run_trial(trial, practice = True, practice_contrasts =practice_contrasts, block_num = block_num)
+                if response is not None:
+                    correct_count += response
+                    
+            accuracy = (correct_count/PTOTAL_TRIALS)*100
+            print(f"Practice block {block_num}, try {repeat_count}, accuracy: {accuracy}")
+            
+            if accuracy >= ACCURACY_THRESHOLD:
+                prac_outcome_text.text = "Great Job!\n\nReady for the next level?"
+                print(f"Practice block {block_num} passed!")
+                prac_outcome_text.draw()
+                win.flip()
+                event.waitKeys(keyList=['space'])
+                thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
+                return
+                
+            else:
+                if repeat_count < 2:
+                    prac_outcome_text.text = "Let's try that again!"
+                    prac_outcome_text.draw()
+                    win.flip()
+                    event.waitKeys(keyList=['space'])
+                    show_instructions(block_num)
+                    
+                elif repeat_count == 2:
+                    print(f"Practice block {block_num} failed twice. Ending experiment.")
+                    end_text.draw()
+                    win.flip()
+                    event.waitKeys(keyList=['space'])
+                    terminate_task()
+                
+            thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
+        
     thisExp.nextEntry()
 
 ####### WELCOME SCREEN AND CALIBRATION  #################################################################################################################################################################################################### 
@@ -974,39 +1052,14 @@ if 'escape' in keys:
 gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
     font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
-gabor_inst1 = visual.GratingStim(
-    win=win, name='gabor_inst1',units='deg', 
-    tex='sin', mask='gauss', anchor='center',
-    ori=90, pos=(5,2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
-    color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.5, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
-gabor_inst2 = visual.GratingStim(
-    win=win, name='gabor_inst2',units='deg', 
-    tex='sin', mask='gauss', anchor='center',
-    ori=0.0, pos=(-5,2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
-    color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.5, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
-gabor_inst3 = visual.GratingStim(
-    win=win, name='gabor_inst3',units='deg', 
-    tex='sin', mask='gauss', anchor='center',
-    ori=90, pos=(-5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
-    color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.8, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
-gabor_inst4 = visual.GratingStim(
-    win=win, name='gabor_inst4',units='deg', 
-    tex='sin', mask='gauss', anchor='center',
-    ori=0.0, pos=(5,-2), size=(4,4), sf=(SPATIAL_FREQUENCY), phase=0.0,
-    color=[1,1,1], colorSpace='rgb',
-    opacity=1.0, contrast=0.2, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
+zebraflies_img = visual.ImageStim(win=win,
+    image = "Images/zebraflies.png",
+    name='zebraflies_img', units='deg', 
+    mask=None, ori=0, pos=(0, -3), 
+    size = (30,18.75), colorSpace='rgb')
+
 gabors_text.draw()
-gabor_inst1.draw()
-gabor_inst2.draw()
-gabor_inst3.draw()
-gabor_inst4.draw()
+zebraflies_img.draw()
 win.flip()
 keys = event.waitKeys(keyList=['space', 'escape'])
 if 'escape' in keys:
@@ -1039,6 +1092,7 @@ for trial in trial_list:
         break_text.draw()
         win.flip()
         event.waitKeys(keyList=['space'])
+        print('Number of trials to be repeated:', len(no_resp_trials)) # print total number of trials with no response so far
         
         # the doDriftCorrect() function requires target position in integers
         # the last two arguments:
@@ -1073,6 +1127,7 @@ while len(no_resp_trials) > 0:
         # At every break interval, do a drift check to recalibrate if necessary
         if trial_count % trials_per_block == 0: 
             
+            print('Number of trials to be repeated:', len(no_resp_trials)) # print total number of trials with no response so far
             break_text.draw()
             win.flip()
             event.waitKeys(keyList=['space'])
