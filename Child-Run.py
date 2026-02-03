@@ -305,6 +305,8 @@ feedback_text = visual.TextStim(win=win, name='feedback_text',
     units='deg', pos=(0, -2.5), draggable=False, height=1.2, wrapWidth=1700, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
     languageStyle='LTR',depth=0.0)
+happy_sound = sound.Sound('sounds/happy_ribbit.wav')
+sad_sound = sound.Sound('sounds/sad_ribbit.wav')
 gaze_feedback = visual.TextStim(win=win, name='gaze_feedback',
     text="", font='Arial',
     units='deg', pos=(0, -2.5), draggable=False, height=1.2, wrapWidth=1700, ori=0, 
@@ -808,6 +810,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             feedback_image.setImage("images/x_mark.png")
             feedback_image.draw()
             feedback_text.draw()
+            sad_sound.play()
             win.flip()
             core.wait(FEEDBACK_DUR)
     else: # response was made, check accuracy, update qp, show feedback in practice blocks
@@ -823,6 +826,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 feedback_image.setImage("images/check_mark.png")
                 feedback_image.draw()
                 feedback_text.draw()
+                happy_sound.play()
                 win.flip()
                 core.wait(FEEDBACK_DUR)
             else:
@@ -830,6 +834,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 feedback_image.setImage("images/x_mark.png")
                 feedback_image.draw()    
                 feedback_text.draw()
+                sad_sound.play()
                 win.flip()
                 core.wait(FEEDBACK_DUR)
     print("Response:", response)
