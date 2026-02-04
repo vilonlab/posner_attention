@@ -38,8 +38,8 @@ PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks 2 and 3
 PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
 PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
-EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
-ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks (5/8 correct)
+EXTENDED_TARGET_DUR = 1.0 # target gabor duration for practice block 2
+ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks 
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
@@ -63,7 +63,7 @@ FIX_CROSS_DUR = 1 # duration of fixation cross at start of trial
 ANDY_FIX_DUR = 1.5 # duration of andy fixation right before cue
 CUE_DUR = 0.05 # cue duration
 ISI = 0.05 # duration of andy fixation between cue and target 
-EXP_TARGET_DUR = 0.1 # target gabor duration for experiment trials
+EXP_TARGET_DUR = 0.5 # target gabor duration for experiment trials
 RESPONSE_WINDOW = 1.0 # duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
 FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
 LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye before a trial is aborted 
@@ -326,7 +326,7 @@ end_text = visual.TextStim(win=win, name='end_text',
 
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
-def abort_trial(trial_index = 0):
+def abort_trial(trial_index = 0, practice = False, block_num = 0):
     """ Ends trial and clears the eyetracker """
     
     # Stop recording
@@ -341,6 +341,15 @@ def abort_trial(trial_index = 0):
     
     # Send a message to clear the Data Viewer screen
     el_tracker.sendMessage('!V CLEAR 116 116 116')
+    
+    if practice and block_num != 0:
+        feedback_text.text = "Oops! You looked at the fly!"
+        feedback_image.setImage("images/eye.png")
+        feedback_image.draw()
+        feedback_text.draw()
+        sad_sound.play()
+        win.flip()
+        core.wait(FEEDBACK_DUR)
 
     # send a message to mark trial end
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_ERROR)
@@ -700,7 +709,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         el_tracker.startRecording(1, 1, 1, 1) # arguments: sample_to_file, events_to_file, sample_over_link, event_over_link (1-yes, 0-no)
     except RuntimeError as error:
         print("ERROR:", error)
-        return abort_trial(trial_index)
+        return abort_trial(trial_index, practice, block_num)
     
     # Allocate time for the tracker to cache some samples
     pylink.pumpDelay(100) 
@@ -709,14 +718,14 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     eye_used = get_eye_used(el_tracker)
     if eye_used is None and not EYETRACKER_OFF:
         print(f"Could not get eye used on trial {trial_index}.")
-        return abort_trial(trial_index)
+        return abort_trial(trial_index, practice, block_num)
         
     # Abort trial if tracker is no longer recording
     error = el_tracker.isRecording()
     if error is not pylink.TRIAL_OK:
         el_tracker.sendMessage('tracker_disconnected')
         print("Tracker disconnected - aborting trial.")
-        return abort_trial
+        return abort_trial(trial_index, practice, block_num)
     # ------------------------------------------------------------------------
 
     sampleTimeList = list()
@@ -742,7 +751,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         # Gaze tracking until end of trial
         if not EYETRACKER_OFF and GAZE_CHECK[0]-frameTolerance <= tThisFlip <= float('inf'):
             if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
-                return abort_trial(trial_index)
+                return abort_trial(trial_index, practice, block_num)
                 
         # Draw the left and right cues (onset and offset is same for both)
         if left_cue.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR-frameTolerance:
@@ -829,7 +838,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 happy_sound.play()
                 win.flip()
                 core.wait(FEEDBACK_DUR)
-            else:
+            elif response == 0:
                 feedback_text.text = "Try Again!"
                 feedback_image.setImage("images/x_mark.png")
                 feedback_image.draw()    
@@ -887,7 +896,7 @@ def run_biofeedback():
     while True:
         show_instructions(0)
         
-        response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=practice_contrasts, block_num = 1)
+        response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=practice_contrasts, block_num = 0)
         
         prac_outcome_text.text = "The zebra fly flew away!"
         prac_outcome_text.draw()
