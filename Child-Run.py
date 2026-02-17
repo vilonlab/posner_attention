@@ -632,7 +632,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         if block_num == 0:
             TARGET_DUR = None # target on screen for unlimited amount of time
             thisExp.addData('block','bio')
-        if block_num == 1:
+        elif block_num == 1:
             TARGET_DUR = None # target on screen for unlimited amount of time
             thisExp.addData('block','pract1')
         elif block_num == 2:
@@ -967,7 +967,7 @@ def run_practice_block(block_num):
             
         thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
     
-    elif block_num != 1:
+    elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
