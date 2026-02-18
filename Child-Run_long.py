@@ -43,10 +43,11 @@ ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
-TRIAL_PRESENTATIONS =  16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks
+TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
 MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, neutral)
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
+MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present in the recovery block; if number of trials to be repeated exceeds then 6th block
 
 # stims (deg)
 CUE_SIZE = .5
@@ -411,6 +412,33 @@ def terminate_task():
     core.quit()
     sys.exit()
 
+def show_end():
+    
+    # Clear the psychopy window
+    if win is not None:
+        win.clearAutoDraw()
+        win.flip()
+
+    # End screen of Andy jumping up and down
+    amplitude = 2.0
+    speed = 0.8 
+    andy_fix.size = (7,7)
+    end_text.pos = (0,-6)
+
+    while True:
+        t = globalClock.getTime()
+        jump_y = abs(np.sin(2*np.pi*speed*t))*amplitude
+        andy_fix.pos = (0, jump_y)
+        
+        andy_fix.draw()
+        end_text.draw()
+        win.flip()
+        
+        keys = event.getKeys(keyList=['escape'])
+        if 'escape' in keys:
+            terminate_task()
+            break
+
 def get_cue_opacity(cue_condition, gabor_position):
     """ Returns the opacities of the left and right cues depending on the trial's cue condition. """
     
@@ -586,9 +614,11 @@ def show_instructions(block_num=None):
         gabor_inst2.draw()
         win.flip()
 
-    keys = event.waitKeys(keyList=['space', 'escape'])
+    keys = event.waitKeys(keyList=['space', 'escape','q'])
     if 'escape' in keys:
         terminate_task()
+    elif 'q' in keys:
+        show_end()
     elif 'space' in keys:
         thisExp.addData('instructions.end', globalClock.getTime(format='float'))
         return
@@ -632,7 +662,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         if block_num == 0:
             TARGET_DUR = None # target on screen for unlimited amount of time
             thisExp.addData('block','bio')
-        if block_num == 1:
+        elif block_num == 1:
             TARGET_DUR = None # target on screen for unlimited amount of time
             thisExp.addData('block','pract1')
         elif block_num == 2:
@@ -800,6 +830,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             
         if kb.getKeys(keyList=["escape"]):
             terminate_task()
+        elif kb.getKeys(keyList=["q"]):
+            show_end()
         
         if continueRoutine:
             win.flip()
@@ -838,7 +870,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 happy_sound.play()
                 win.flip()
                 core.wait(FEEDBACK_DUR)
-            elif response == 0:
+            else:
                 feedback_text.text = "Try Again!"
                 feedback_image.setImage("images/x_mark.png")
                 feedback_image.draw()    
@@ -902,11 +934,13 @@ def run_biofeedback():
         prac_outcome_text.draw()
         win.flip()
         
-        keys = event.waitKeys(keyList=['r', 'space', 'escape'])
+        keys = event.waitKeys(keyList=['r', 'space', 'escape', 'q'])
         
         for key in keys:
             if key == 'escape':
                 terminate_task()
+            elif key == 'q':
+                show_end()
             elif key == 'r': # show a different trial if r is pressed
                 trial_index +=1
                 break
@@ -936,7 +970,9 @@ def run_practice_block(block_num):
             response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
             if response is not None:
                 correct_count += response
-            event.waitKeys(keyList=['space'])
+            keys = event.waitKeys(keyList=['space', 'q'])
+            if 'q' in keys:
+                show_end()
             
         accuracy = (correct_count/len(trial_list))*100
         print(f"Practice block {block_num}, try {repeat_count}, accuracy: {accuracy}")
@@ -960,14 +996,11 @@ def run_practice_block(block_num):
                 
             elif repeat_count == 2:
                 print(f"Practice block {block_num} failed twice. Ending experiment.")
-                end_text.draw()
-                win.flip()
-                event.waitKeys(keyList=['space'])
-                terminate_task()
+                show_end()
             
         thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
     
-    elif block_num != 1:
+    elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
@@ -1005,10 +1038,7 @@ def run_practice_block(block_num):
                     
                 elif repeat_count == 2:
                     print(f"Practice block {block_num} failed twice. Ending experiment.")
-                    end_text.draw()
-                    win.flip()
-                    event.waitKeys(keyList=['space'])
-                    terminate_task()
+                    show_end()
                 
             thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
         
@@ -1044,9 +1074,11 @@ if not EYETRACKER_OFF:
         el_tracker.exitCalibration()
     thisExp.addData('calibration.end', globalClock.getTime(format='float'))
 else:
-    keys = event.waitKeys(keyList=['space', 'escape'])
+    keys = event.waitKeys(keyList=['space', 'escape', 'q'])
     if 'escape' in keys:
         terminate_task()
+    elif 'q' in keys:
+        show_end()
     elif 'space' in keys:
         thisExp.addData('welcome.end', globalClock.getTime(format='float'))
 
@@ -1058,9 +1090,11 @@ andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial'
 andy_text.draw()
 andy_fix.draw()
 win.flip()
-keys = event.waitKeys(keyList=['space', 'escape'])
+keys = event.waitKeys(keyList=['space', 'escape', 'q'])
 if 'escape' in keys:
     terminate_task()
+elif 'q' in keys:
+    show_end()
     
 # Gabors screen
 gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
@@ -1075,9 +1109,11 @@ zebraflies_img = visual.ImageStim(win=win,
 gabors_text.draw()
 zebraflies_img.draw()
 win.flip()
-keys = event.waitKeys(keyList=['space', 'escape'])
+keys = event.waitKeys(keyList=['space', 'escape', 'q'])
 if 'escape' in keys:
     terminate_task()
+elif 'q' in keys:
+    show_end()
 
 ####### PRACTICE BLOCKS #################################################################################################################################################################################################### 
 
@@ -1105,8 +1141,10 @@ for trial in trial_list:
         
         break_text.draw()
         win.flip()
-        event.waitKeys(keyList=['space'])
-        print('Number of trials to be repeated:', len(no_resp_trials)) # print total number of trials with no response so far
+        print('\nNumber of trials to be repeated:', len(no_resp_trials), '\n') # print total number of trials with no response so far
+        keys = event.waitKeys(keyList=['space', 'q'])
+        if 'q' in keys:
+            show_end()
         
         # the doDriftCorrect() function requires target position in integers
         # the last two arguments:
@@ -1139,12 +1177,14 @@ while len(no_resp_trials) > 0:
         trial_count += 1
         
         # At every break interval, do a drift check to recalibrate if necessary
-        if trial_count % trials_per_block == 0: 
+        if trial_count % MAX_RECOVERY_TRIALS == 0: 
             
-            print('Number of trials to be repeated:', len(no_resp_trials)) # print total number of trials with no response so far
             break_text.draw()
             win.flip()
-            event.waitKeys(keyList=['space'])
+            print('\nNumber of trials to be repeated:', len(no_resp_trials), '\n') # print total number of trials with no response so far
+            keys = event.waitKeys(keyList=['space', 'q'])
+            if 'q' in keys:
+                show_end()
             
             # the doDriftCorrect() function requires target position in integers
             # the last two arguments:
@@ -1173,22 +1213,4 @@ while len(no_resp_trials) > 0:
 
 ####### END EXPERIMENT #################################################################################################################################################################################################### 
 
-# End screen of Andy jumping up and down
-amplitude = 2.0
-speed = 0.8 
-andy_fix.size = (7,7)
-end_text.pos = (0,-6)
-
-while True:
-    t = globalClock.getTime()
-    jump_y = abs(np.sin(2*np.pi*speed*t))*amplitude
-    andy_fix.pos = (0, jump_y)
-    
-    andy_fix.draw()
-    end_text.draw()
-    win.flip()
-    
-    keys = event.getKeys(keyList=['escape'])
-    if 'escape' in keys:
-        terminate_task()
-        break
+show_end()

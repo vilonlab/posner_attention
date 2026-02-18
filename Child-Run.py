@@ -39,7 +39,7 @@ PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practi
 PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
 PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
 EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
-ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks (5/8 correct)
+ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
