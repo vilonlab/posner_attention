@@ -958,47 +958,48 @@ def run_practice_block(block_num):
     repeat_count = 0
     
     if block_num == 1:
-        thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
-        correct_count = 0
-        repeat_count +=1 
-        
-        trial_list = create_trial_list('practice1')
-        
-        practice_contrasts = [PRACT1_CONTRASTS]*len(TRIAL_TYPES)
-        
-        for trial in trial_list:
-            response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
-            if response is not None:
-                correct_count += response
-            keys = event.waitKeys(keyList=['space', 'q'])
-            if 'q' in keys:
-                show_end()
+        while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
+            correct_count = 0
+            repeat_count +=1 
             
-        accuracy = (correct_count/len(trial_list))*100
-        print(f"Practice block {block_num}, try {repeat_count}, accuracy: {accuracy}")
+            trial_list = create_trial_list('practice1')
             
-        if accuracy >= ACCURACY_THRESHOLD:
-            prac_outcome_text.text = "Great Job!\n\nReady for the next level?"
-            print(f"Practice block {block_num} passed!")
-            prac_outcome_text.draw()
-            win.flip()
-            event.waitKeys(keyList=['space'])
-            thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
-            return
+            practice_contrasts = [PRACT1_CONTRASTS]*len(TRIAL_TYPES)
             
-        else:
-            if repeat_count < 2:
-                prac_outcome_text.text = "Let's try that again!"
+            for trial in trial_list:
+                response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
+                if response is not None:
+                    correct_count += response
+                keys = event.waitKeys(keyList=['space', 'q'])
+                if 'q' in keys:
+                    show_end()
+                
+            accuracy = (correct_count/len(trial_list))*100
+            print(f"Practice block {block_num}, try {repeat_count}, accuracy: {accuracy}")
+                
+            if accuracy >= ACCURACY_THRESHOLD:
+                prac_outcome_text.text = "Great Job!\n\nReady for the next level?"
+                print(f"Practice block {block_num} passed!")
                 prac_outcome_text.draw()
                 win.flip()
                 event.waitKeys(keyList=['space'])
-                show_instructions(block_num)
+                thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
+                return
                 
-            elif repeat_count == 2:
-                print(f"Practice block {block_num} failed twice. Ending experiment.")
-                show_end()
-            
-        thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
+            else:
+                if repeat_count < 2:
+                    prac_outcome_text.text = "Let's try that again!"
+                    prac_outcome_text.draw()
+                    win.flip()
+                    event.waitKeys(keyList=['space'])
+                    show_instructions(block_num)
+                    
+                elif repeat_count == 2:
+                    print(f"Practice block {block_num} failed twice. Ending experiment.")
+                    show_end()
+                
+            thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
     
     elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
