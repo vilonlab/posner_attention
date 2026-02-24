@@ -327,6 +327,27 @@ end_text = visual.TextStim(win=win, name='end_text',
 
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
+def drift_check():
+    """ Performs a drift check. Allows for recalibration during the exp. """
+    
+    # the doDriftCorrect() function requires target position in integers
+    # the last two arguments:
+    # draw_target (1-default, 0-draw the target then call doDriftCorrect)
+    # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
+    while not EYETRACKER_OFF:
+        # terminate the task if no longer connected to the tracker
+        if (not el_tracker.isConnected()) or el_tracker.breakPressed():
+            terminate_task()
+            
+        # drift-check and re-do camera setup if ESCAPE is pressed
+        try:
+            error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
+            # break following a success drift-check
+            if error is not pylink.ESC_KEY:
+                break
+        except:
+            pass
+
 def abort_trial(trial_index = 0, practice = False, block_num = 0):
     """ Ends trial and clears the eyetracker """
     
@@ -959,6 +980,8 @@ def run_practice_block(block_num):
     
     if block_num == 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            drift_check()
+            
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
             repeat_count +=1 
@@ -1003,6 +1026,8 @@ def run_practice_block(block_num):
     
     elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            drift_check()
+            
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
             repeat_count +=1
@@ -1147,23 +1172,7 @@ for trial in trial_list:
         if 'q' in keys:
             show_end()
         
-        # the doDriftCorrect() function requires target position in integers
-        # the last two arguments:
-        # draw_target (1-default, 0-draw the target then call doDriftCorrect)
-        # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
-        while not EYETRACKER_OFF:
-            # terminate the task if no longer connected to the tracker
-            if (not el_tracker.isConnected()) or el_tracker.breakPressed():
-                terminate_task()
-                
-            # drift-check and re-do camera setup if ESCAPE is pressed
-            try:
-                error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
-                # break following a success drift-check
-                if error is not pylink.ESC_KEY:
-                    break
-            except:
-                pass
+        drift_check()
 
 # Repeat trials with no response
 trial_count = TOTAL_TRIALS
@@ -1187,23 +1196,7 @@ while len(no_resp_trials) > 0:
             if 'q' in keys:
                 show_end()
             
-            # the doDriftCorrect() function requires target position in integers
-            # the last two arguments:
-            # draw_target (1-default, 0-draw the target then call doDriftCorrect)
-            # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
-            while not EYETRACKER_OFF:
-                # terminate the task if no longer connected to the tracker
-                if (not el_tracker.isConnected()) or el_tracker.breakPressed():
-                    terminate_task()
-                    
-                # drift-check and re-do camera setup if ESCAPE is pressed
-                try:
-                    error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
-                    # break following a success drift-check
-                    if error is not pylink.ESC_KEY:
-                        break
-                except:
-                    pass
+            drift_check()
 
         response = run_trial(trial, practice = False, practice_contrasts = None, block_num = None)
 
