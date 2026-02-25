@@ -674,6 +674,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     left_cue.opacity, right_cue.opacity = get_cue_opacity(trial['cue_condition'], trial['gabor_position'])
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
+    block_type = None
 
     # Set practice-specific variables
     if practice: 
@@ -682,21 +683,21 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
         if block_num == 0:
             TARGET_DUR = None # target on screen for unlimited amount of time
-            thisExp.addData('block','bio')
+            block_type = 'bio'
         elif block_num == 1:
             TARGET_DUR = None # target on screen for unlimited amount of time
-            thisExp.addData('block','pract1')
+            block_type = 'pract1'
         elif block_num == 2:
             TARGET_DUR = EXTENDED_TARGET_DUR
-            thisExp.addData('block','pract2')
+            block_type = 'pract2'
         else:
             TARGET_DUR = EXP_TARGET_DUR
-            thisExp.addData('block','pract3')
+            block_type = 'pract3'
             
     # Set QP algorithm logic for experiment trials
     else:
         TARGET_DUR = EXP_TARGET_DUR
-        thisExp.addData('block','exp')
+        block_type = 'exp'
         global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
@@ -715,6 +716,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         # Update gabor contrast
         gabor.contrast = intensity
         
+    thisExp.addData('block', block_type)
+    
     # Gaze check starting 100ms before cue
     GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR-0.1, None]
     if TARGET_DUR is not None:
@@ -743,14 +746,22 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     if practice:
         print(f"Running practice trial {trial_index}:", trial)
         status_msg = 'PRACTICE TRIAL %d' % trial_index
-        el_tracker.sendMessage('PRACTICE_TRIALID %d' % trial_index)
+        el_tracker.sendMessage('TRIALID %d' % trial_index)
     else:
         print(f"Running experiment trial {trial_index}:", trial)
-        status_msg = 'TRIAL number %d' % trial_index
+        status_msg = 'TRIAL %d' % trial_index
         el_tracker.sendMessage('TRIALID %d' % trial_index)
 
     # Send status message to host PC
     el_tracker.sendCommand("record_status_message '%s'" % status_msg)
+    
+    # Set trial variables
+    el_tracker.sendMessage('!V TRIAL_VAR block %s' % block_type)
+    el_tracker.sendMessage('!V TRIAL_VAR trial %s' % trial_index)
+    el_tracker.sendMessage('!V TRIAL_VAR condition %s' % trial['cue_condition'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_pos %s' % trial['gabor_position'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_ori %s' % trial['orientation'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_intensity %s' % intensity)
 
     # put tracker in idle/offline mode before recording
     el_tracker.setOfflineMode()
@@ -919,17 +930,15 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         print(f"Next Intensity: {intensity}")
     
     # Send trial data to EDF file
-    el_tracker.sendMessage('!V TRIAL_VAR condition %s' % trial['cue_condition'])
     try:
-        el_tracker.sendMessage('!V TRIAL_VAR RT %d' % int(rt))
-    except (TypeError, ValueError):
-        el_tracker.sendMessage('!V TRIAL_VAR RT -1') # If no response, RT is set to -1 in eyetracker data
+        el_tracker.sendMessage('!V TRIAL_VAR keypress %d' % key_name)
+        el_tracker.sendMessage('!V TRIAL_VAR accuracy %d' % response)
     
     el_tracker.sendMessage('!V CLEAR 128 128 128')
     
     # Stop recording between trials to decrease size of output file
-    pylink.pumpDelay(100) # add 100 msec to catch final events before stopping
     el_tracker.stopRecording()
+    pylink.pumpDelay(100) # add 100 msec to catch final events before stopping
     
     # Send trial result message to mark the end of the trial
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_OK)
@@ -1135,6 +1144,7 @@ zebraflies_img = visual.ImageStim(win=win,
 gabors_text.draw()
 zebraflies_img.draw()
 win.flip()
+
 keys = event.waitKeys(keyList=['space', 'escape', 'q'])
 if 'escape' in keys:
     terminate_task()
@@ -1152,6 +1162,9 @@ run_practice_block(3) # exactly like experiment trials
 
 # Instruction text screen before experiment trials
 show_instructions()
+
+# Chec drift before starting experiment
+drift_check()
 
 # Reset variables and generate the trial list
 no_resp_trials = []
