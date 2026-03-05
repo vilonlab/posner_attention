@@ -74,7 +74,7 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 # Collect participant ID, visit number, number of blocks and check that the inputted variables are valid
 exp_name = 'ZebraFliesTask'
 exp_info = {
-    'Participant ID': '',
+    'SubID': '',
     'Visit': '',
     'Blocks':'Ex. 4,6,8'}
 while True:
@@ -85,7 +85,7 @@ while True:
 
     # get blocks and write edf filename
     blocks = int(exp_info['Blocks'])
-    participant_id = exp_info['Participant ID']
+    participant_id = exp_info['SubID']
     edf_filename = f"{participant_id}_ET"
 
     # check if the filename and number of blocks are valid
@@ -697,7 +697,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     # Set QP algorithm logic for experiment trials
     else:
         TARGET_DUR = EXP_TARGET_DUR
-        block_type = 'exp'
+        block_type = f'exp{block_num}'
         global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
@@ -933,7 +933,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     try:
         el_tracker.sendMessage('!V TRIAL_VAR keypress %d' % key_name)
         el_tracker.sendMessage('!V TRIAL_VAR accuracy %d' % response)
-    
+    except:
+        el_tracker.sendMessage('!V TRIAL_VAR rt -1')
     el_tracker.sendMessage('!V CLEAR 128 128 128')
     
     # Stop recording between trials to decrease size of output file
@@ -1169,9 +1170,10 @@ drift_check()
 # Reset variables and generate the trial list
 no_resp_trials = []
 trial_list = create_trial_list('experiment')
+block= 1
 
 for trial in trial_list:
-    response = run_trial(trial, practice = False, practice_contrasts = None, block_num = None)
+    response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
     if response is None:
         no_resp_trials.append(trial)  
 
@@ -1180,6 +1182,7 @@ for trial in trial_list:
         
         break_text.draw()
         win.flip()
+        block += 1
         print('\nNumber of trials to be repeated:', len(no_resp_trials), '\n') # print total number of trials with no response so far
         keys = event.waitKeys(keyList=['space', 'q'])
         if 'q' in keys:
@@ -1190,6 +1193,7 @@ for trial in trial_list:
 # Repeat trials with no response
 trial_count = TOTAL_TRIALS
 while len(no_resp_trials) > 0:
+    block = 'rec'
     print(f"Re-running {len(no_resp_trials)} trials with no response...")
 
     remaining_trials = []
@@ -1211,7 +1215,7 @@ while len(no_resp_trials) > 0:
             
             drift_check()
 
-        response = run_trial(trial, practice = False, practice_contrasts = None, block_num = None)
+        response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
 
         if response is None and trial['presented'] < MAX_TRIAL_REPEATS:
             remaining_trials.append(trial)

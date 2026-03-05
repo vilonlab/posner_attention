@@ -39,7 +39,7 @@ PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practi
 PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
 PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
 EXTENDED_TARGET_DUR = 1.0 # target gabor duration for practice block 2
-ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks 
+ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
@@ -74,7 +74,7 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 # Collect participant ID, visit number, number of blocks and check that the inputted variables are valid
 exp_name = 'ZebraFliesTask'
 exp_info = {
-    'Participant ID': '',
+    'SubID': '',
     'Visit': '',
     'Blocks':'Ex. 4,6,8'}
 while True:
@@ -85,7 +85,7 @@ while True:
 
     # get blocks and write edf filename
     blocks = int(exp_info['Blocks'])
-    participant_id = exp_info['Participant ID']
+    participant_id = exp_info['SubID']
     edf_filename = f"{participant_id}_ET"
 
     # check if the filename and number of blocks are valid
@@ -326,6 +326,27 @@ end_text = visual.TextStim(win=win, name='end_text',
     languageStyle='LTR',depth=0.0)
 
 ####### FUNCTIONS #################################################################################################################################################################################################### 
+
+def drift_check():
+    """ Performs a drift check. Allows for recalibration during the exp. """
+    
+    # the doDriftCorrect() function requires target position in integers
+    # the last two arguments:
+    # draw_target (1-default, 0-draw the target then call doDriftCorrect)
+    # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
+    while not EYETRACKER_OFF:
+        # terminate the task if no longer connected to the tracker
+        if (not el_tracker.isConnected()) or el_tracker.breakPressed():
+            terminate_task()
+            
+        # drift-check and re-do camera setup if ESCAPE is pressed
+        try:
+            error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
+            # break following a success drift-check
+            if error is not pylink.ESC_KEY:
+                break
+        except:
+            pass
 
 def abort_trial(trial_index = 0, practice = False, block_num = 0):
     """ Ends trial and clears the eyetracker """
@@ -653,6 +674,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     left_cue.opacity, right_cue.opacity = get_cue_opacity(trial['cue_condition'], trial['gabor_position'])
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
+    block_type = None
 
     # Set practice-specific variables
     if practice: 
@@ -661,21 +683,21 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
         if block_num == 0:
             TARGET_DUR = None # target on screen for unlimited amount of time
-            thisExp.addData('block','bio')
+            block_type = 'bio'
         elif block_num == 1:
             TARGET_DUR = None # target on screen for unlimited amount of time
-            thisExp.addData('block','pract1')
+            block_type = 'pract1'
         elif block_num == 2:
             TARGET_DUR = EXTENDED_TARGET_DUR
-            thisExp.addData('block','pract2')
+            block_type = 'pract2'
         else:
             TARGET_DUR = EXP_TARGET_DUR
-            thisExp.addData('block','pract3')
+            block_type = 'pract3'
             
     # Set QP algorithm logic for experiment trials
     else:
         TARGET_DUR = EXP_TARGET_DUR
-        thisExp.addData('block','exp')
+        block_type = f'exp{block_num}'
         global current_qp
         if trial['cue_condition'] == 'Valid':
             current_qp = qp_valid
@@ -694,6 +716,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         # Update gabor contrast
         gabor.contrast = intensity
         
+    thisExp.addData('block', block_type)
+    
     # Gaze check starting 100ms before cue
     GAZE_CHECK = [FIX_CROSS_DUR+ANDY_FIX_DUR-0.1, None]
     if TARGET_DUR is not None:
@@ -722,14 +746,22 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     if practice:
         print(f"Running practice trial {trial_index}:", trial)
         status_msg = 'PRACTICE TRIAL %d' % trial_index
-        el_tracker.sendMessage('PRACTICE_TRIALID %d' % trial_index)
+        el_tracker.sendMessage('TRIALID %d' % trial_index)
     else:
         print(f"Running experiment trial {trial_index}:", trial)
-        status_msg = 'TRIAL number %d' % trial_index
+        status_msg = 'TRIAL %d' % trial_index
         el_tracker.sendMessage('TRIALID %d' % trial_index)
 
     # Send status message to host PC
     el_tracker.sendCommand("record_status_message '%s'" % status_msg)
+    
+    # Set trial variables
+    el_tracker.sendMessage('!V TRIAL_VAR block %s' % block_type)
+    el_tracker.sendMessage('!V TRIAL_VAR trial %s' % trial_index)
+    el_tracker.sendMessage('!V TRIAL_VAR condition %s' % trial['cue_condition'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_pos %s' % trial['gabor_position'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_ori %s' % trial['orientation'])
+    el_tracker.sendMessage('!V TRIAL_VAR gabor_intensity %s' % intensity)
 
     # put tracker in idle/offline mode before recording
     el_tracker.setOfflineMode()
@@ -898,17 +930,16 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         print(f"Next Intensity: {intensity}")
     
     # Send trial data to EDF file
-    el_tracker.sendMessage('!V TRIAL_VAR condition %s' % trial['cue_condition'])
     try:
-        el_tracker.sendMessage('!V TRIAL_VAR RT %d' % int(rt))
-    except (TypeError, ValueError):
-        el_tracker.sendMessage('!V TRIAL_VAR RT -1') # If no response, RT is set to -1 in eyetracker data
-    
+        el_tracker.sendMessage('!V TRIAL_VAR keypress %d' % key_name)
+        el_tracker.sendMessage('!V TRIAL_VAR accuracy %d' % response)
+    except:
+        el_tracker.sendMessage('!V TRIAL_VAR rt -1')
     el_tracker.sendMessage('!V CLEAR 128 128 128')
     
     # Stop recording between trials to decrease size of output file
-    pylink.pumpDelay(100) # add 100 msec to catch final events before stopping
     el_tracker.stopRecording()
+    pylink.pumpDelay(100) # add 100 msec to catch final events before stopping
     
     # Send trial result message to mark the end of the trial
     el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_OK)
@@ -959,6 +990,8 @@ def run_practice_block(block_num):
     
     if block_num == 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            drift_check()
+            
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
             repeat_count +=1 
@@ -1003,6 +1036,8 @@ def run_practice_block(block_num):
     
     elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+            drift_check()
+            
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
             repeat_count +=1
@@ -1110,6 +1145,7 @@ zebraflies_img = visual.ImageStim(win=win,
 gabors_text.draw()
 zebraflies_img.draw()
 win.flip()
+
 keys = event.waitKeys(keyList=['space', 'escape', 'q'])
 if 'escape' in keys:
     terminate_task()
@@ -1128,12 +1164,16 @@ run_practice_block(3) # exactly like experiment trials
 # Instruction text screen before experiment trials
 show_instructions()
 
+# Chec drift before starting experiment
+drift_check()
+
 # Reset variables and generate the trial list
 no_resp_trials = []
 trial_list = create_trial_list('experiment')
+block= 1
 
 for trial in trial_list:
-    response = run_trial(trial, practice = False, practice_contrasts = None, block_num = None)
+    response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
     if response is None:
         no_resp_trials.append(trial)  
 
@@ -1142,32 +1182,18 @@ for trial in trial_list:
         
         break_text.draw()
         win.flip()
+        block += 1
         print('\nNumber of trials to be repeated:', len(no_resp_trials), '\n') # print total number of trials with no response so far
         keys = event.waitKeys(keyList=['space', 'q'])
         if 'q' in keys:
             show_end()
         
-        # the doDriftCorrect() function requires target position in integers
-        # the last two arguments:
-        # draw_target (1-default, 0-draw the target then call doDriftCorrect)
-        # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
-        while not EYETRACKER_OFF:
-            # terminate the task if no longer connected to the tracker
-            if (not el_tracker.isConnected()) or el_tracker.breakPressed():
-                terminate_task()
-                
-            # drift-check and re-do camera setup if ESCAPE is pressed
-            try:
-                error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
-                # break following a success drift-check
-                if error is not pylink.ESC_KEY:
-                    break
-            except:
-                pass
+        drift_check()
 
 # Repeat trials with no response
 trial_count = TOTAL_TRIALS
 while len(no_resp_trials) > 0:
+    block = 'rec'
     print(f"Re-running {len(no_resp_trials)} trials with no response...")
 
     remaining_trials = []
@@ -1187,25 +1213,9 @@ while len(no_resp_trials) > 0:
             if 'q' in keys:
                 show_end()
             
-            # the doDriftCorrect() function requires target position in integers
-            # the last two arguments:
-            # draw_target (1-default, 0-draw the target then call doDriftCorrect)
-            # allow_setup (1-press ESCAPE to recalibrate, 0-not allowed)
-            while not EYETRACKER_OFF:
-                # terminate the task if no longer connected to the tracker
-                if (not el_tracker.isConnected()) or el_tracker.breakPressed():
-                    terminate_task()
-                    
-                # drift-check and re-do camera setup if ESCAPE is pressed
-                try:
-                    error = el_tracker.doDriftCorrect(int(scn_width/2.0),int(scn_height/2.0), 1, 1)
-                    # break following a success drift-check
-                    if error is not pylink.ESC_KEY:
-                        break
-                except:
-                    pass
+            drift_check()
 
-        response = run_trial(trial, practice = False, practice_contrasts = None, block_num = None)
+        response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
 
         if response is None and trial['presented'] < MAX_TRIAL_REPEATS:
             remaining_trials.append(trial)
