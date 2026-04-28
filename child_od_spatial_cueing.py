@@ -23,7 +23,6 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 globalClock = core.Clock() # initialize global clock
 
 EYETRACKER_OFF = False # Set to True to run the script without eyetracking
-current_qp = None # Setting global variable so then we can print posteriors at the end
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
 # get 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
@@ -72,7 +71,7 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
 # Collect participant ID, visit number, number of blocks and check that the inputted variables are valid
-exp_name = 'ZebraFliesTask'
+exp_name = 'ZebraFliesTask_spatial_cueing'
 exp_info = {
     'SubID': '',
     'Visit': '',
@@ -105,7 +104,7 @@ print("Trials per block:", trials_per_block)
 
 # Establish data output directory
 time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
-output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}{time_str}")
+output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}_{time_str}")
 os.makedirs(output_folder, exist_ok=True)
 filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}") # file for psychopy task data
 edf_path = os.path.join(output_folder, f"{edf_filename}.EDF") # file for eyetracker data
@@ -258,7 +257,7 @@ qp_neutral = QuestPlus(
     func='weibull',
     stim_scale='linear'
 )
-
+current_qp = None # Setting global variable so then we can print posteriors at the end
 ####### INITIALIZE EXPERIMENT TRIAL COMPONENTS #################################################################################################################################################################################################### 
 
 kb = keyboard.Keyboard()
@@ -816,14 +815,15 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 return abort_trial(trial_index, practice, block_num)
                 
         # Draw the left and right cues (onset and offset is same for both)
-        if left_cue.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR-frameTolerance:
-            draw_comp(left_cue, t, tThisFlipGlobal, frameN)
-            draw_comp(right_cue, t, tThisFlipGlobal, frameN)
-            el_tracker.sendMessage('cue_started')
-        if left_cue.status == STARTED and tThisFlipGlobal > left_cue.tStartRefresh + CUE_DUR-frameTolerance:
-            erase_comp(left_cue, t, tThisFlipGlobal, frameN)
-            erase_comp(right_cue, t, tThisFlipGlobal, frameN)
-            el_tracker.sendMessage('cue_stopped')
+        if block_type != 'bio':
+            if left_cue.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR-frameTolerance:
+                draw_comp(left_cue, t, tThisFlipGlobal, frameN)
+                draw_comp(right_cue, t, tThisFlipGlobal, frameN)
+                el_tracker.sendMessage('cue_started')
+            if left_cue.status == STARTED and tThisFlipGlobal > left_cue.tStartRefresh + CUE_DUR-frameTolerance:
+                erase_comp(left_cue, t, tThisFlipGlobal, frameN)
+                erase_comp(right_cue, t, tThisFlipGlobal, frameN)
+                el_tracker.sendMessage('cue_stopped')
             
         # Draw target
         if gabor.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
@@ -952,14 +952,13 @@ def run_biofeedback():
     
     thisExp.addData(f'biofeedback.start', globalClock.getTime(format='float'))
     trial_list = create_trial_list('practice')
-    practice_contrasts = PRACT_CONTRASTS * (PTOTAL_TRIALS//len(PRACT_CONTRASTS))
-    shuffle(practice_contrasts)
+    contrasts = [1.0] * PTOTAL_TRIALS # always 100% contrast
     trial_index = 0
     
     while True:
         show_instructions(0)
         
-        response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=practice_contrasts, block_num = 0)
+        response = run_trial(trial_list[trial_index], practice = True, practice_contrasts=contrasts, block_num = 0)
         
         prac_outcome_text.text = "The zebra fly flew away!"
         prac_outcome_text.draw()
