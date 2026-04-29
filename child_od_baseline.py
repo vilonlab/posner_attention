@@ -21,12 +21,12 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 globalClock = core.Clock() # initialize global clock
+routineTimer = core.Clock() # initialize trial-level clock (will get reset at the start of each trial)
 
 EYETRACKER_OFF = True # Set to True to run the script without eyetracking
-current_qp = None # Setting global variable so then we can print posteriors at the end
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
-# get 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'freq_condition': 'High'})
+# get all 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'freq_condition': 'High'})
 TRIAL_TYPES = data.createFactorialTrialList({
             'orientation': [0, 90], # 0 - vertical; 90 - horizontal
             'gabor_position': [-1, 1], # -1 = Left, 1 = Right
@@ -34,34 +34,33 @@ TRIAL_TYPES = data.createFactorialTrialList({
             })
 
 # practice blocks
-PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in each practice block
+PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in practice blocks 2 and 3
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks 2 and 3
 PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
 PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
-EXTENDED_TARGET_DUR = 0.5 # target gabor duration for practice block 2
+EXTENDED_TARGET_DUR = 0.5 # target duration for practice block 2
 ACCURACY_THRESHOLD = 75 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
 TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks (64 trials for each frequency condition)
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
-MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same sf condition (high, loe)
-MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
+MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same sf condition (high, low)
+MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
 
 # stims (deg)
 TARGET_SIZE = 2
 FIXCROSS_SIZE = 0.75
 ANDYFIX_SIZE = 1.5
 POSITION = np.array([6.0, 0.0]) # DVA eccentricity for target
-GAZE_BOUNDS = 3 # if gaze shifts more than this from fixation point, trial is aborted 
 HIGH_SPATIAL_FREQ = 8
 LOW_SPATIAL_FREQ = 2
 
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
-ITI = 1.0 # s; duration of fixation cross at start of trial
-ANDY_FIX_DUR = 1.5 # s; Andy to signal start of trial
-EXP_TARGET_DUR = 1.0 # s; target gabor duration for experiment trials
+FIX_CROSS_DUR = 1.0 # s; duration of fixation cross at start of trial
+ANDY_FIX_DUR = 0.5 # s; Andy to signal start of trial
+EXP_TARGET_DUR = 0.1 # s; target gabor duration for experiment trials
 RESPONSE_WINDOW = 2.0 # s; duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
 FEEDBACK_DUR = 1 # s; duration of feedback presentation for practice blocks
 
@@ -125,12 +124,6 @@ win = visual.Window(fullscr=True, color=[0,0,0],
 # Get the screen resolution used by PsychoPy
 scn_width, scn_height = win.size # in retina pixels
 
-# Calculate host PC pixel conversions
-host_x = int(scn_width//2)
-host_y = int(scn_height//2)
-px_per_cm = screen_w_px / screen_w_cm
-px_per_dva = px_per_cm * (2 * view_dist_cm * math.tan(math.radians(0.5)))
-
 # Save frame rate to data file
 exp_info['frameRate'] = win.getActualFrameRate() 
 
@@ -144,6 +137,13 @@ thisExp = data.ExperimentHandler(
     sortColumns='time') 
 
 # -------------- Connect to the EyeLink Host PC; based on sample scripts from SR Research
+
+# Calculate host PC pixel conversions
+host_x = int(scn_width//2)
+host_y = int(scn_height//2)
+px_per_cm = screen_w_px / screen_w_cm
+px_per_dva = px_per_cm * (2 * view_dist_cm * math.tan(math.radians(0.5)))
+
 if EYETRACKER_OFF:
     el_tracker = pylink.EyeLink(None) # Need this line so code will run when not using eyetracking
 else:
@@ -228,6 +228,7 @@ pylink.openGraphicsEx(genv)
 logging.info(f"Graphics environment set up: {genv}")
 
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
+current_qp = None # Setting global variable so we can print posteriors at the end
 
 stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
 param_domain = {
@@ -258,7 +259,40 @@ qp_low = QuestPlus(
 ####### INITIALIZE EXPERIMENT TRIAL COMPONENTS #################################################################################################################################################################################################### 
 
 kb = keyboard.Keyboard()
-
+welcome_text = visual.TextStim(win=win, name='welcome_text',
+    text='''Welcome to the Zebra Flies Game!''',
+    font='Arial', units='deg', 
+    pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
+    color='black', colorSpace='rgb', opacity=1, 
+    languageStyle='LTR',depth=0.0)
+andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
+    color='black', colorSpace='rgb')
+gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
+    font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
+    color='black', colorSpace='rgb')
+zebraflies_img = visual.ImageStim(win=win,
+    image = "Images/zebraflies.png",
+    name='zebraflies_img', units='deg', 
+    mask=None, ori=0, pos=(0, -3), 
+    size = (30,18.75), colorSpace='rgb')
+instruct_text = visual.TextStim(win=win, name='instruct_text',
+    text="", font='Arial', units='deg', pos=(0, 0), draggable=False, 
+    height=1.2, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
+    opacity=1,languageStyle='LTR',depth=0.0)
+gabor_inst1 = visual.GratingStim(
+    win=win, name='gabor_inst1',units='deg', 
+    tex='sin', mask='gauss', anchor='center',
+    ori=90, pos=(-POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(LOW_SPATIAL_FREQ), phase=0.0,
+    color=[1,1,1], colorSpace='rgb',
+    opacity=1.0, contrast=0.5, blendmode='avg',
+    texRes=128.0, interpolate=True, depth=-2.0)
+gabor_inst2 = visual.GratingStim(
+    win=win, name='gabor_inst2',units='deg', 
+    tex='sin', mask='gauss', anchor='center',
+    ori=0.0, pos=(POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(HIGH_SPATIAL_FREQ), phase=0.0,
+    color=[1,1,1], colorSpace='rgb',
+    opacity=1.0, contrast=0.5, blendmode='avg',
+    texRes=128.0, interpolate=True, depth=-2.0)
 fix_cross = visual.ShapeStim(
     win=win, name='fix_cross', vertices='cross',units='deg', 
     size=(FIXCROSS_SIZE, FIXCROSS_SIZE),
@@ -307,7 +341,7 @@ end_text = visual.TextStim(win=win, name='end_text',
 ####### FUNCTIONS #################################################################################################################################################################################################### 
 
 def drift_check():
-    """ Performs a drift check. Allows for recalibration during the exp. """
+    """ Performs a drift check. Allows for recalibration between blocks. """
     
     # the doDriftCorrect() function requires target position in integers
     # the last two arguments:
@@ -378,6 +412,7 @@ def terminate_task():
     sys.exit()
 
 def show_end():
+    ''' Displays Andy jumping and a thank you message. Calls terminate_task when esc is pressed.'''
     
     # Clear the psychopy window
     if win is not None:
@@ -406,6 +441,7 @@ def show_end():
 
 def consecutive_check(trial_list):
     """ Checks the trial list to ensure that there are no more than MAX_CONSECUTIVE_TRIALS consecutive trials with the same sf condition """
+    
     consecutive_count = 1
     if len(trial_list) == 0:
         return False
@@ -420,11 +456,13 @@ def consecutive_check(trial_list):
 
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
-    """ Create the trial list for the block """
+    """ Create the trial list for the block. """
+    
+    # Get how many times to repeat each type of trial in TRIAL_TYPES
     if block_type == 'practice1':
-        reps = 1
+        reps = 1 
     elif block_type == 'practice':
-        reps = PTRIAL_PRESENTATIONS
+        reps = PTRIAL_PRESENTATIONS 
     elif block_type == 'experiment':
         reps = TRIAL_PRESENTATIONS
     trial_list = []
@@ -445,6 +483,7 @@ def create_trial_list(block_type):
 
 def draw_comp(comp, t, tThisFlipGlobal, frameN):
     """ Draw visual components and save onset to the data file """
+    
     comp.frameNStart = frameN
     comp.tStart = t
     comp.tStartRefresh = tThisFlipGlobal
@@ -458,6 +497,7 @@ def draw_comp(comp, t, tThisFlipGlobal, frameN):
 
 def erase_comp(comp, t, tThisFlipGlobal, frameN):
     """ Erase visual components and save offset to the data file """
+    
     comp.tStop = t
     comp.tStopRefresh = tThisFlipGlobal
     comp.frameNStop = frameN
@@ -469,7 +509,8 @@ def erase_comp(comp, t, tThisFlipGlobal, frameN):
         thisExp.timestampOnFlip(win, 'kb.end')
 
 def get_eye_used(el_tracker):
-    """ Gets eye used. Returns 0 for left, 1 for right, None if eye data cannot be collected.t"""
+    """ Gets eye used. Returns 0 for left, 1 for right, None if eye data cannot be collected."""
+    
     if EYETRACKER_OFF:
         return 0 # For when running without eyetracking
         
@@ -485,33 +526,14 @@ def get_eye_used(el_tracker):
     print("ERROR: EyeLink not connected or invalid eye")
     return None
 
-def show_instructions(block_num=None):
+def show_instructions(prac_block_num=None):
     """Display instructions based on block. """
     
     thisExp.addData('instructions.start', globalClock.getTime(format='float'))
-    instruct_text = visual.TextStim(win=win, name='instruct_text',
-    text="", font='Arial', units='deg', pos=(0, 0), draggable=False, 
-    height=1.2, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
-    opacity=1,languageStyle='LTR',depth=0.0)
-    
-    gabor_inst1 = visual.GratingStim(
-        win=win, name='gabor_inst1',units='deg', 
-        tex='sin', mask='gauss', anchor='center',
-        ori=90, pos=(5,0), size=(4,4), sf=(LOW_SPATIAL_FREQ), phase=0.0,
-        color=[1,1,1], colorSpace='rgb',
-        opacity=1.0, contrast=0.5, blendmode='avg',
-        texRes=128.0, interpolate=True, depth=-2.0)
-    gabor_inst2 = visual.GratingStim(
-        win=win, name='gabor_inst2',units='deg', 
-        tex='sin', mask='gauss', anchor='center',
-        ori=0.0, pos=(-5,0), size=(4,4), sf=(HIGH_SPATIAL_FREQ), phase=0.0,
-        color=[1,1,1], colorSpace='rgb',
-        opacity=1.0, contrast=0.5, blendmode='avg',
-        texRes=128.0, interpolate=True, depth=-2.0)
         
-    if block_num in (1, 2, 3):
-        instruct_text.text = f'''***PRACTICE LEVEL {block_num}***\n\n
-        Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
+    if prac_block_num in (1, 2, 3):
+        instruct_text.text = f'''***PRACTICE LEVEL {prac_block_num}***\n\n
+        Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n
         Press the left button if the zebra flies will move up and down, 
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
@@ -520,7 +542,7 @@ def show_instructions(block_num=None):
         gabor_inst2.draw()
         win.flip()
     else:
-        instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
+        instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n
         Press the left button if the zebra flies will move up and down, 
         and the right button if the zebra flies will move side to side.'''
         instruct_text.draw()
@@ -538,8 +560,8 @@ def show_instructions(block_num=None):
         thisExp.addData('instructions.end', globalClock.getTime(format='float'))
         return
 
-def run_trial(trial, practice = False, practice_contrasts = None, practice_frequencies = None, block_num = None):
-    """ Run one trial. Returns response: 1- Correct; 0 - Incorrent; None - No response or trial aborted """
+def run_trial(trial, practice = False, practice_contrasts = None, block_num = None):
+    """ Run one trial. Returns response: 1- Correct; 0 - Incorrent; None - No response. """
     
     # Reset variables
     t = 0
@@ -549,6 +571,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
     allKeys = []
     components = [fix_cross, andy_fix, gabor, kb]
     eye_used = None
+    block_type = None
     for comp in components:
         comp.tStart = None
         comp.tStop = None
@@ -566,12 +589,12 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
     # Set and target parameters 
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
-
+    frequency = HIGH_SPATIAL_FREQ if trial['freq_condition'] == 'High' else LOW_SPATIAL_FREQ
+    gabor.sf = frequency
+    
     # Set practice-specific variables
-    block_type = None
     if practice: 
         intensity = practice_contrasts.pop(0)
-        frequency = practice_frequencies.pop(0)
         gabor.contrast = intensity
         
         if block_num == 1:
@@ -591,10 +614,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
         global current_qp
         if trial['freq_condition'] == 'High':
             current_qp = qp_high
-            frequency = HIGH_SPATIAL_FREQ
         elif trial['freq_condition'] == 'Low':
             current_qp = qp_low
-            frequency = LOW_SPATIAL_FREQ
         
         # Save threshold, slope, and lapse rate from QP to data file
         threshold = current_qp.param_estimate['threshold']
@@ -605,17 +626,16 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
         next_stim = current_qp.next_stim
         intensity = next_stim['intensity']
         
-        # Update gabor contrast and spatial frequency from QP and trial condition
+        # Update gabor contrast from QP
         gabor.contrast = intensity
-        gabor.sf = frequency
         
     thisExp.addData('block', block_type)
     
     # Get trial duration
     if TARGET_DUR is not None:
-        TRIAL_DUR = ITI + ANDY_FIX_DUR + TARGET_DUR + RESPONSE_WINDOW
+        TRIAL_DUR = FIX_CROSS_DUR + ANDY_FIX_DUR + TARGET_DUR + RESPONSE_WINDOW
         thisExp.addData('trial_dur_s', TRIAL_DUR)
-    
+        
     # -------------------- Eyetracker Setup ---------------------------------
     # Esure tracker is ready to receive commands
     el_tracker = pylink.getEYELINK()
@@ -664,17 +684,17 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
     # Allocate time for the tracker to cache some samples
     pylink.pumpDelay(100) 
     
-    # Get eye used. When using eyetracking, abort trial if no eye information can be collected.
+    # Get eye used. 
     eye_used = get_eye_used(el_tracker)
     if eye_used is None and not EYETRACKER_OFF:
         print(f"Could not get eye used on trial {trial_index}.")
         return
         
-    # Abort trial if tracker is no longer recording
+    # Return an error if tracker disconnected
     error = el_tracker.isRecording()
     if error is not pylink.TRIAL_OK:
         el_tracker.sendMessage('tracker_disconnected')
-        print("Tracker disconnected - aborting trial.")
+        print("Tracker disconnected.")
         return
     # ------------------------------------------------------------------------
     
@@ -685,18 +705,18 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
         tThisFlipGlobal = win.getFutureFlipTime(clock=None)
         frameN = frameN + 1
         
-        # Draw fixation cross at start of trial for its set duration
+        # Draw fixation cross at start of trial
         if fix_cross.status == NOT_STARTED and tThisFlip >= 0.0-frameTolerance:
             draw_comp(fix_cross, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('fixation_started')
             
-        # Draw Andy fixation to signal start of trial; stays on until trial ends
-        if andy_fix.status==NOT_STARTED and tThisFlip >= ITI -frameTolerance:
+        # Draw Andy fixation after fix cross duration; stays on until trial ends
+        if andy_fix.status==NOT_STARTED and tThisFlip >= FIX_CROSS_DUR -frameTolerance:
             erase_comp(fix_cross, t, tThisFlipGlobal, frameN)
             draw_comp(andy_fix, t, tThisFlipGlobal, frameN)
             
         # Draw target and start checking for key presses
-        if gabor.status == NOT_STARTED and tThisFlip >= ITI+ANDY_FIX_DUR -frameTolerance:
+        if gabor.status == NOT_STARTED and tThisFlip >= FIX_CROSS_DUR+ANDY_FIX_DUR -frameTolerance:
             draw_comp(gabor, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('target_started')
             draw_comp(kb, t, tThisFlipGlobal, frameN)
@@ -709,28 +729,27 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
             key = kb.getKeys(keyList=RESPONSE_KEYS, waitRelease=False)
             allKeys.extend(key)
             
-            if allKeys: # end trial loop when a key is pressed
+            if allKeys: 
                 last_key = allKeys[-1]
                 key_name = last_key.name  # get just the last key pressed
                 rt = last_key.rt
-                continueRoutine = False 
+                continueRoutine = False # end trial when a key is pressed
                 break
-                
-            if not (block_num == 1 or block_num == 0): # if not biofeedback or practice block 1, end trial after trial_dur if no key is pressed
-                if tThisFlip >= TRIAL_DUR - frameTolerance: 
-                    continueRoutine = False
-                    break
             
         if kb.getKeys(keyList=["escape"]):
             terminate_task()
         elif kb.getKeys(keyList=["q"]):
             show_end()
             
-        # Only erase target if target_dur is defined (i.e., target is on screen indefinitely in practice block 1)
+        # If statements when target duration is not unlimited
         if TARGET_DUR is not None:
             if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DUR -frameTolerance:
                 erase_comp(gabor, t, tThisFlipGlobal, frameN)
                 el_tracker.sendMessage('target_stopped')
+                
+            if tThisFlip >= TRIAL_DUR - frameTolerance: # end trial after trial duration has elapsed
+                continueRoutine = False
+                break
         
         if continueRoutine:
             win.flip()
@@ -745,7 +764,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
     # Response check and feedback 
     if key_name is None:  # No response was made, do not update qp, show feedback in practice blocks
         response = None
-        if practice and block_num != 0:
+        if practice:
             feedback_text.text = "Remember to press a button!"
             feedback_image.setImage("images/x_mark.png")
             feedback_image.draw()
@@ -787,8 +806,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, practice_frequ
     thisExp.addData('gabor.ori', gabor.ori)
     thisExp.addData('keypress', key_name)
     thisExp.addData('accuracy', response)
-    if key_name != None: 
-        thisExp.addData('rt', rt)
+    thisExp.addData('rt', rt)
     if not practice:
         thisExp.addData('qp_threshold', threshold)
         thisExp.addData('qp_slope', slope)
@@ -821,8 +839,6 @@ def run_practice_block(block_num):
     
     accuracy = 0
     repeat_count = 0
-    freqs = [HIGH_SPATIAL_FREQ, LOW_SPATIAL_FREQ]*8
-    prac_freqs = shuffle(freqs)
     
     if block_num == 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
@@ -837,7 +853,7 @@ def run_practice_block(block_num):
             practice_contrasts = [PRACT1_CONTRASTS]*len(TRIAL_TYPES)
             
             for trial in trial_list:
-                response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, practice_frequencies = prac_freqs, block_num = block_num)
+                response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
                 if response is not None:
                     correct_count += response
                 keys = event.waitKeys(keyList=['space', 'q'])
@@ -873,7 +889,7 @@ def run_practice_block(block_num):
     elif block_num > 1:
         while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
             drift_check()
-            
+           
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
             correct_count = 0
             repeat_count +=1
@@ -884,7 +900,7 @@ def run_practice_block(block_num):
             shuffle(practice_contrasts)
             
             for trial in trial_list:
-                response = run_trial(trial, practice = True, practice_contrasts =practice_contrasts, practice_frequencies = prac_freqs, block_num = block_num)
+                response = run_trial(trial, practice = True, practice_contrasts =practice_contrasts, block_num = block_num)
                 if response is not None:
                     correct_count += response
                     
@@ -919,22 +935,14 @@ def run_practice_block(block_num):
 ####### WELCOME SCREEN AND CALIBRATION  #################################################################################################################################################################################################### 
 
 # Set clocks and start experiment
-routineTimer = core.Clock()
+thisExp.status = STARTED
 logging.setDefaultClock(globalClock)
 win.flip()
 
-thisExp.addData('welcome.start', globalClock.getTime(format='float'))
-thisExp.status = STARTED
-
 # Window needs to be flipped before trying to run calibration or else code won't run
-welcome_text = visual.TextStim(win=win, name='welcome_text',
-    text='''Welcome to the Zebra Flies Game!''',
-    font='Arial', units='deg', 
-    pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
-    color='black', colorSpace='rgb', opacity=1, 
-    languageStyle='LTR',depth=0.0)
 welcome_text.draw()
 win.flip()
+thisExp.addData('welcome.start', globalClock.getTime(format='float'))
 
 # Calibrate eyetracker if on
 if not EYETRACKER_OFF:
@@ -957,8 +965,6 @@ else:
 ####### INSTRUCTIONS  #################################################################################################################################################################################################### 
 
 # Andy screen
-andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
-    color='black', colorSpace='rgb')
 andy_text.draw()
 andy_fix.draw()
 win.flip()
@@ -969,15 +975,6 @@ elif 'q' in keys:
     show_end()
     
 # Gabors screen
-gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
-    font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
-    color='black', colorSpace='rgb')
-zebraflies_img = visual.ImageStim(win=win,
-    image = "Images/zebraflies.png",
-    name='zebraflies_img', units='deg', 
-    mask=None, ori=0, pos=(0, -3), 
-    size = (30,18.75), colorSpace='rgb')
-
 gabors_text.draw()
 zebraflies_img.draw()
 win.flip()
@@ -990,7 +987,7 @@ elif 'q' in keys:
 
 ####### PRACTICE BLOCKS #################################################################################################################################################################################################### 
 
-run_practice_block(1) # unlimited amount of time for pt to answer, trial ends with experimenter pressing space
+run_practice_block(1) # target stays on screen for unlimited amount of time, experimenter-paced
 run_practice_block(2) # target presented for extended time
 run_practice_block(3) # exactly like experiment trials
     
@@ -999,7 +996,7 @@ run_practice_block(3) # exactly like experiment trials
 # Instruction text screen before experiment trials
 show_instructions()
 
-# Chec drift before starting experiment
+# Check drift before starting experiment
 drift_check()
 
 # Reset variables and generate the trial list
@@ -1008,7 +1005,7 @@ trial_list = create_trial_list('experiment')
 block= 1
 
 for trial in trial_list:
-    response = run_trial(trial, practice = False, practice_contrasts = None, practice_frequencies = None, block_num = block)
+    response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
     if response is None:
         no_resp_trials.append(trial)  
 
