@@ -617,8 +617,8 @@ def show_instructions(block_num=None):
     elif block_num in (1, 2, 3):
         instruct_text.text = f'''***PRACTICE LEVEL {block_num}***\n\n
         Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -626,8 +626,8 @@ def show_instructions(block_num=None):
         win.flip()
     else:
         instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -649,7 +649,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     # Reset variables
     t = 0
     frameN = -1
-    routineTimer.reset()
     continueRoutine = True
     allKeys = []
     components = [fix_cross, andy_fix, left_cue, right_cue, gabor, kb]
@@ -788,7 +787,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         print("Tracker disconnected - aborting trial.")
         return abort_trial(trial_index, practice, block_num)
     # ------------------------------------------------------------------------
-
+    
+    routineTimer.reset()
     sampleTimeList = list()
     loss_clock = core.Clock()
     
@@ -1091,7 +1091,7 @@ thisExp.status = STARTED
 
 # Window needs to be flipped before trying to run calibration or else code won't run
 welcome_text = visual.TextStim(win=win, name='welcome_text',
-    text='''Welcome to the Zebra Flies Game!''',
+    text='''Welcome to the Zebra Flies Game 2.0!''',
     font='Arial', units='deg', 
     pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
@@ -1132,7 +1132,7 @@ elif 'q' in keys:
     show_end()
     
 # Gabors screen
-gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
+gabors_text = visual.TextStim(win=win, text="Andy wants to catch zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
     font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
 zebraflies_img = visual.ImageStim(win=win,

@@ -23,7 +23,7 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 globalClock = core.Clock() # initialize global clock
 routineTimer = core.Clock() # initialize trial-level clock (will get reset at the start of each trial)
 
-EYETRACKER_OFF = True # Set to True to run the script without eyetracking
+EYETRACKER_OFF = False # Set to True to run the script without eyetracking
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
 # get all 24 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Valid','freq_condition': 'High'})
@@ -70,7 +70,7 @@ TRIAL_PRESENTATIONS = 16 # how many times to present each of the 24 unique TRIAL
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
 MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, neutral)
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
-MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present in the recovery block; if number of trials to be repeated exceeds then 6th block 
+MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present per recovery block
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
@@ -78,8 +78,7 @@ MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present in the recovery b
 exp_name = 'ZebraFliesTask_spatial_cueing_all_conditions'
 exp_info = {
     'SubID': '',
-    'Visit': '',
-    'Blocks':'Ex. 4,6,8'}
+    'Visit': ''}
 while True:
     dlg = gui.DlgFromDict(dictionary=exp_info, title=exp_name)
     if dlg.OK == False:
@@ -87,7 +86,6 @@ while True:
         sys.exit()
 
     # get blocks and write edf filename
-    blocks = int(exp_info['Blocks'])
     participant_id = exp_info['SubID']
     edf_filename = f"{participant_id}_ET"
 
@@ -97,14 +95,12 @@ while True:
         raise ValueError('ERROR: Invalid EDF filename. Enter only letters, digits, or underscores.')
     elif len(edf_filename) > 8:
         raise ValueError("ERROR: Invalid EDF filename: participant ID must be ≤5 characters.")
-    elif (TOTAL_TRIALS)%blocks != 0:
-        raise ValueError(f"ERROR: Invalid number of blocks. Must be a factor of {TOTAL_TRIALS}.")
     else:
         break
 
 # Calculate number of trials in each block
-trials_per_block = TOTAL_TRIALS/blocks
-print("Trials per block:", trials_per_block)
+trials_per_block = 48
+print("Trials in blocks 1-5:", trials_per_block)
 
 # Establish data output directory
 time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
@@ -300,7 +296,7 @@ qp_invalid_high = QuestPlus(
 kb = keyboard.Keyboard()
 
 welcome_text = visual.TextStim(win=win, name='welcome_text',
-    text='''Welcome to the Zebra Flies Game!''',
+    text='''Welcome to the Zebra Flies Game 2.0!''',
     font='Arial', units='deg', 
     pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
@@ -311,7 +307,7 @@ instruct_text = visual.TextStim(win=win, name='instruct_text',
     opacity=1,languageStyle='LTR',depth=0.0)
 andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
-gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
+gabors_text = visual.TextStim(win=win, text="Andy wants to catch zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
     font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
 zebraflies_img = visual.ImageStim(win=win,
@@ -692,8 +688,8 @@ def show_instructions(block_num=None):
     elif block_num in (1, 2, 3):
         instruct_text.text = f'''***PRACTICE LEVEL {block_num}***\n\n
         Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -701,8 +697,8 @@ def show_instructions(block_num=None):
         win.flip()
     else:
         instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -803,7 +799,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     thisExp.addData('block', block_type)
     
     # Get trial duration and gaze check interval
-    GAZE_CHECK_START = [FIX_CROSS_DUR+ANDY_FIX_DUR-0.1] # Gaze check starts 100ms before cue
+    GAZE_CHECK_START = FIX_CROSS_DUR+ANDY_FIX_DUR-0.1 # Gaze check starts 100ms before cue
     if TARGET_DUR is not None:
         GAZE_CHECK_END = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR # gaze check ends at target offset if not unlimited presentation
         TRIAL_DUR = FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI+TARGET_DUR+RESPONSE_WINDOW
@@ -1224,7 +1220,7 @@ elif 'q' in keys:
 
 ####### PRACTICE BLOCKS #################################################################################################################################################################################################### 
 
-#run_biofeedback() # one trial for pts to look at gabor patch, can be repeated by pressing 'r'
+run_biofeedback() # one trial for pts to look at gabor patch, can be repeated by pressing 'r'
 run_practice_block(1) # target stays on screen for unlimited amount of time, experimenter-paced
 run_practice_block(2) # target presented for extended time
 run_practice_block(3) # exactly like experiment trials
@@ -1248,7 +1244,7 @@ for trial in trial_list:
         no_resp_trials.append(trial)  
 
     # At every break interval, do a drift check to recalibrate if necessary
-    if (trial['index'] % trials_per_block == 0 and trial['index'] != TOTAL_TRIALS) or (trial['index'] == TOTAL_TRIALS and len(no_resp_trials)>1): 
+    if trial['index'] % trials_per_block == 0 and trial['index'] != TOTAL_TRIALS: 
         
         break_text.draw()
         win.flip()
@@ -1261,7 +1257,9 @@ for trial in trial_list:
         drift_check()
 
 # Repeat trials with no response
-trial_count = TOTAL_TRIALS
+trial_count = 0 # keep track of how many trials shown in block 6 after the remaining 16 
+record_recovery_trials = False
+recovery_block_trials = 0
 while len(no_resp_trials) > 0:
     block = 'rec'
     print(f"Re-running {len(no_resp_trials)} trials with no response...")
@@ -1272,9 +1270,12 @@ while len(no_resp_trials) > 0:
         trial_num = trial_list.index(trial) + 1
         thisExp.addData('trial', trial_num)
         trial_count += 1
+        if record_recovery_trials:
+            recovery_block_trials += 1
         
         # At every break interval, do a drift check to recalibrate if necessary
-        if trial_count % MAX_RECOVERY_TRIALS == 0: 
+        if trial_count == 32 or recovery_block_trials % trials_per_block == 0: 
+            record_recovery_trials = True
             
             break_text.draw()
             win.flip()

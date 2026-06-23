@@ -21,18 +21,16 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 ####### EXPERIMENT PARAMETERS ####################################################################################################################################################################################################
 
 globalClock = core.Clock() # initialize global clock
-routineTimer = core.Clock() # initialize trial-level clock (will get reset at the start of each trial)
+trialClock = core.Clock() # initialize trial-level clock (gets reset at the start of each trial loop)
 
-EYETRACKER_OFF = True # Set to True to run the script without eyetracking
+EYETRACKER_OFF = False # Set to True to run the script without eyetracking
 RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
 
-# get all 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'freq_condition': 'High'})
-TRIAL_TYPES = data.createFactorialTrialList({
-            'orientation': [0, 90], # 0 - vertical; 90 - horizontal
-            'gabor_position': [-1, 1], # -1 = Left, 1 = Right
-            'freq_condition': ['High', 'Low']  
-            })
-            
+# trial conditions
+ORIENTATIONS = [0, 90] # 0 - vertical; 90 - horizontal
+GABOR_POSITIONS = [-1, 1] # -1 = Left, 1 = Right
+FREQ_CONDITIONS = ['High', 'Low']  
+
 # stims (deg)
 TARGET_SIZE = 2
 FIXCROSS_SIZE = 0.75
@@ -43,26 +41,39 @@ LOW_SPATIAL_FREQ = 2
 
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
-FIX_CROSS_DUR = 1.0 # s; duration of fixation cross at start of trial
-ANDY_FIX_DUR = 1.5 # s; Andy to signal start of trial
-EXP_TARGET_DUR = 0.1 # s; target gabor duration for experiment trials
-RESPONSE_WINDOW = 1.0 # s; duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
-FEEDBACK_DUR = 1.0 # s; duration of feedback presentation for practice blocks
+FIX_CROSS_DUR = 1.0 # duration of fixation cross at start of trial
+ANDY_FIX_DUR = 0.5 # Andy to signal start of trial
+EXP_TARGET_DUR = 1.0 # target gabor duration for experiment trials
+RESPONSE_WINDOW = 2.0 # duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
+FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
 
-# practice blocks
+# practice block 1
+PRACT1_PRESENTATIONS = 1 # how many times to present each of the 8 unique TRIAL_TYPES in practice block 1
+PRACT1_CONTRASTS = [0.1, 0.2, 0.5, 1.0] # contrasts for trials in practice block 1
+
+# get all 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'freq_condition': 'High'})
+TRIAL_TYPES = data.createFactorialTrialList({
+            'orientation': ORIENTATIONS,
+            'gabor_position': GABOR_POSITIONS,
+            'freq_condition': FREQ_CONDITIONS 
+            })
+
+# practice blocks 2  & 3
 PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in practice blocks 2 and 3
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total trials in practice blocks 2 and 3
-PRACT1_CONTRASTS = 1.0 # 100% contrast for all trials in practice block 1
-PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # hardcoded possible gabor contrast values for practice trials; keep length to a factor of 8
+PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # gabor contrast values; keep length to a factor of 8
 EXTENDED_TARGET_DUR = 0.5 # target duration for practice block 2
+
+# all practice blocks
 ACCURACY_THRESHOLD = 75 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
-TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks (64 trials for each frequency condition)
+TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks (64 trials per frequency condition)
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
 MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same sf condition (high, low)
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
+MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
@@ -267,7 +278,7 @@ welcome_text = visual.TextStim(win=win, name='welcome_text',
     languageStyle='LTR',depth=0.0)
 andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
-gabors_text = visual.TextStim(win=win, text="Andy loves to eat zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
+gabors_text = visual.TextStim(win=win, text="Andy wants to learn about zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
     font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
     color='black', colorSpace='rgb')
 zebraflies_img = visual.ImageStim(win=win,
@@ -457,10 +468,10 @@ def consecutive_check(trial_list):
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
     """ Create the trial list for the block. """
-    
+
     # Get how many times to repeat each type of trial in TRIAL_TYPES
     if block_type == 'practice1':
-        reps = 1 
+        reps = PRACT1_PRESENTATIONS
     elif block_type == 'practice':
         reps = PTRIAL_PRESENTATIONS 
     elif block_type == 'experiment':
@@ -534,8 +545,8 @@ def show_instructions(prac_block_num=None):
     if prac_block_num in (1, 2, 3):
         instruct_text.text = f'''***PRACTICE LEVEL {prac_block_num}***\n\n
         Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -543,8 +554,8 @@ def show_instructions(prac_block_num=None):
         win.flip()
     else:
         instruct_text.text = '''Your job is to tell Andy which way the zebra flies are going!\n\n\n\n\n\n\n
-        Press the left button if the zebra flies will move up and down, 
-        and the right button if the zebra flies will move side to side.'''
+        Press the top button if the zebra flies will move up and down, 
+        and the bottom button if the zebra flies will move side to side.'''
         instruct_text.draw()
         andy_fix.draw()
         gabor_inst1.draw()
@@ -566,7 +577,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     # Reset variables
     t = 0
     frameN = -1
-    routineTimer.reset()
     continueRoutine = True
     allKeys = []
     components = [fix_cross, andy_fix, gabor, kb]
@@ -678,7 +688,6 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         el_tracker.startRecording(1, 1, 1, 1) # arguments: sample_to_file, events_to_file, sample_over_link, event_over_link (1-yes, 0-no)
     except RuntimeError as error:
         print("ERROR:", error)
-        return 
     
     # Allocate time for the tracker to cache some samples
     pylink.pumpDelay(100) 
@@ -687,20 +696,20 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     eye_used = get_eye_used(el_tracker)
     if eye_used is None and not EYETRACKER_OFF:
         print(f"Could not get eye used on trial {trial_index}.")
-        return
         
     # Return an error if tracker disconnected
     error = el_tracker.isRecording()
     if error is not pylink.TRIAL_OK:
         el_tracker.sendMessage('tracker_disconnected')
         print("Tracker disconnected.")
-        return
     # ------------------------------------------------------------------------
     
+    trialClock.reset()
+
     # Start trial while loop
     while continueRoutine: 
-        t = routineTimer.getTime()
-        tThisFlip = win.getFutureFlipTime(clock=routineTimer)
+        t = trialClock.getTime()
+        tThisFlip = win.getFutureFlipTime(clock=trialClock)
         tThisFlipGlobal = win.getFutureFlipTime(clock=None)
         frameN = frameN + 1
         
@@ -849,7 +858,11 @@ def run_practice_block(block_num):
             
             trial_list = create_trial_list('practice1')
             
-            practice_contrasts = [PRACT1_CONTRASTS]*len(TRIAL_TYPES)
+            total_trials = len(TRIAL_TYPES)*PRACT1_PRESENTATIONS
+            practice_contrasts = PRACT1_CONTRASTS*(total_trials//len(PRACT1_CONTRASTS))
+            shuffle(practice_contrasts)
+            
+            print(practice_contrasts)
             
             for trial in trial_list:
                 response = run_trial(trial, practice = True, practice_contrasts = practice_contrasts, block_num = block_num)
