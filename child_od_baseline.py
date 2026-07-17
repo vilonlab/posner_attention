@@ -1,4 +1,4 @@
-# --- Import packages ---
+   # --- Import packages ---
 from psychopy import prefs, plugins, sound, gui, visual, core, data, event, logging, clock, colors, layout, hardware, monitors
 from psychopy.constants import (NOT_STARTED, STARTED, STOPPED, FINISHED, PRESSED, RELEASED, FOREVER, priority)
 plugins.activatePlugins()
@@ -24,7 +24,7 @@ globalClock = core.Clock() # initialize global clock
 trialClock = core.Clock() # initialize trial-level clock (gets reset at the start of each trial loop)
 
 EYETRACKER_OFF = False # Set to True to run the script without eyetracking
-RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
+RESPONSE_KEYS = ['1', '2'] # 1 for vertical, 2 for horizontal
 
 # trial conditions
 ORIENTATIONS = [0, 90] # 0 - vertical; 90 - horizontal
@@ -782,8 +782,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             core.wait(FEEDBACK_DUR)
     else: # response was made, check accuracy, update qp, show feedback in practice blocks
         response = 1 if (
-            (key_name == '1' and trial['orientation'] == 0) or 
-            (key_name == '2' and trial['orientation'] == 90)
+            (key_name == RESPONSE_KEYS[0] and trial['orientation'] == 0) or 
+            (key_name == RESPONSE_KEYS[1] and trial['orientation'] == 90)
             ) else 0
         if not practice:
             current_qp.update(stim=next_stim, outcome={'response': response})
