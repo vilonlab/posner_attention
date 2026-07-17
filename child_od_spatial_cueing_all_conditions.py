@@ -972,8 +972,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             core.wait(FEEDBACK_DUR)
     else: # response was made, check accuracy, update qp, show feedback in practice blocks
         response = 1 if (
-            (key_name == '1' and trial['orientation'] == 0) or 
-            (key_name == '2' and trial['orientation'] == 90)
+            (key_name == RESPONSE_KEYS[0] and trial['orientation'] == 0) or 
+            (key_name == RESPONSE_KEYS[1] and trial['orientation'] == 90)
             ) else 0
         if not practice:
             current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
