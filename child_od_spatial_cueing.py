@@ -23,7 +23,7 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 globalClock = core.Clock() # initialize global clock
 
 EYETRACKER_OFF = False # Set to True to run the script without eyetracking
-RESPONSE_KEYS = ['1', '2'] # 1 for left, 2 for right
+RESPONSE_KEYS = ['1', '2'] # 1 for vertical, 2 for horizontal
 
 # get 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'cue_condition': 'Neutral'})
 TRIAL_TYPES = data.createFactorialTrialList({
@@ -42,7 +42,7 @@ ACCURACY_THRESHOLD = 62 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
 
 # experiment blocks
-TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks
+TRIAL_PRESENTATIONS = 16 # how many times to present each of the 8 unique TRIAL_TYPES throughout all experiment blocks NOTE: gives 64 trials for each QP function
 TOTAL_TRIALS = TRIAL_PRESENTATIONS * len(TRIAL_TYPES) # total number of experiment trials
 MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same cue condition (valid, neutral)
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after being aborted (includes initial presentation)
@@ -825,19 +825,10 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 erase_comp(right_cue, t, tThisFlipGlobal, frameN)
                 el_tracker.sendMessage('cue_stopped')
             
-        # Draw target
+        # Draw target and start checking for key presses
         if gabor.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
             draw_comp(gabor, t, tThisFlipGlobal, frameN)
             el_tracker.sendMessage('target_started')
-            
-        # Only erase target if target_dur is defined (i.e., target is on screen indefinitely in practice block 1)
-        if TARGET_DUR is not None:
-            if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DUR -frameTolerance:
-                erase_comp(gabor, t, tThisFlipGlobal, frameN)
-                el_tracker.sendMessage('target_stopped')
-        
-        # Start checking for key response on target onset
-        if kb.status == NOT_STARTED and tThisFlip >= (FIX_CROSS_DUR+ANDY_FIX_DUR+CUE_DUR+ISI)-frameTolerance:
             draw_comp(kb, t, tThisFlipGlobal, frameN)
             win.callOnFlip(kb.clock.reset)  # t=0 on next screen flip
             win.callOnFlip(kb.clearEvents, eventType='keyboard')
@@ -855,25 +846,27 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
                 continueRoutine = False 
                 break
                 
-            if not (block_num == 1 or block_num == 0): # if not biofeedback or practice block 1, end trial after trial_dur if no key is pressed
-                if tThisFlip >= TRIAL_DUR - frameTolerance: 
-                    continueRoutine = False
-                    break
-            
         if kb.getKeys(keyList=["escape"]):
             terminate_task()
         elif kb.getKeys(keyList=["q"]):
             show_end()
-        
+            
+        # If statements when target duration is not unlimited
+        if TARGET_DUR is not None:
+            if gabor.status == STARTED and tThisFlipGlobal > gabor.tStartRefresh + TARGET_DUR -frameTolerance:
+                erase_comp(gabor, t, tThisFlipGlobal, frameN)
+                el_tracker.sendMessage('target_stopped')
+                
+            if tThisFlip >= TRIAL_DUR - frameTolerance: # end trial after trial duration has elapsed
+                continueRoutine = False
+                break
+    
         if continueRoutine:
             win.flip()
             
     for comp in components:
         if hasattr(comp, 'setAutoDraw'):
             comp.setAutoDraw(False)
-            
-    # Add trial end time to data file
-    thisExp.addData('trial.end', globalClock.getTime(format='float'))
     
     # Response check and feedback 
     if key_name is None:  # No response was made, do not update qp, show feedback in practice blocks
@@ -888,8 +881,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             core.wait(FEEDBACK_DUR)
     else: # response was made, check accuracy, update qp, show feedback in practice blocks
         response = 1 if (
-            (key_name == '1' and trial['orientation'] == 0) or 
-            (key_name == '2' and trial['orientation'] == 90)
+            (key_name == RESPONSE_KEYS[0] and trial['orientation'] == 0) or 
+            (key_name == RESPONSE_KEYS[1] and trial['orientation'] == 90)
             ) else 0
         if not practice:
             current_qp.update(stim={'intensity': intensity}, outcome={'response': response})
@@ -1166,10 +1159,12 @@ show_instructions()
 # Chec drift before starting experiment
 drift_check()
 
-# Reset variables and generate the trial list
+# Reset variables
 no_resp_trials = []
-trial_list = create_trial_list('experiment')
 block= 1
+
+# Create experiment trial list
+trial_list = create_trial_list('experiment')
 
 for trial in trial_list:
     response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
