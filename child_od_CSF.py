@@ -79,10 +79,10 @@ EXP_TRIAL_TYPES = data.createFactorialTrialList({
             })
 
 # experiment blocks
-EXP_TRIAL_PRESENTATIONS = 32 # how many times to present each of the 4 unique EXP_TRIAL_TYPES throughout all experiment blocks
+EXP_TRIAL_PRESENTATIONS = 40 # how many times to present each of the 4 unique EXP_TRIAL_TYPES throughout all experiment blocks
 TOTAL_EXP_TRIALS = EXP_TRIAL_PRESENTATIONS * len(EXP_TRIAL_TYPES) # total number of real experiment trials
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
-MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
+MAX_RECOVERY_TRIALS = 56 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
 CATCH_TRIALS_CONTRASTS = [0.8, 1.0] # possible contrasts for catch trials
 
 # get all 16 unique catch trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1})
@@ -490,45 +490,40 @@ def consecutive_check(trial_list):
         else:
             consecutive_count = 1
     return True  # Valid trial list
-        
-def interleave_catch_trials(exp_trial_list, catch_trial_list, min_gap = 3):
-    """ 
-    Insert catch trials into exp_trials so that no two catch trials are adjacent.
-    
-    min_gap is the minimum number of exp trials between catch trials. 
+
+def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=0):
     """
-    n_exp = len(exp_trial_list)
-    n_catch = len(catch_trial_list)
-    
+    Insert catch trials at even intervals through exp_trials.
+
+    Spacing is derived from the two list lengths, so every catch trial is used
+    and the interval is n_exp / n_catch (160 exp / 32 catch -> one catch every
+    5 exp trials). jitter=k shifts each catch trial up to k positions either
+    way; jitter=0 is strictly periodic. Cannot fail, so no retry loop.
+    """
+    n_exp, n_catch = len(exp_trial_list), len(catch_trial_list)
     if n_catch == 0:
-        return exp_trials
-        
-    while True:
-        slots = list(range(n_exp+1))
-        shuffle(slots)
-        
-        chosen_slots = []
-        for slot in slots:
-            if all(abs(slot-s) > min_gap for s in chosen_slots):
-                chosen_slots.append(slot)
-                if len(chosen_slots) == n_catch:
-                    break
-                    
-        if len(chosen_slots) == n_catch:
-            break
-            
+        return exp_trial_list
+
+    slots = [round((i + 1) * n_exp / n_catch) for i in range(n_catch)]
+
+    if jitter:
+        slots = [min(max(s + random.randint(-jitter, jitter), 0), n_exp)
+                 for s in slots]
+        slots.sort()
+
     merged = exp_trial_list[:]
-    for slot, catch_trial in sorted(zip(chosen_slots, catch_trial_list), reverse=True):
+    for slot, catch_trial in sorted(zip(slots, catch_trial_list),
+                                    key=lambda p: p[0], reverse=True):
         catch_trial = dict(catch_trial)
         catch_trial['type'] = 'catch'
         merged.insert(slot, catch_trial)
-        
+
     for i, trial in enumerate(merged, start=1):
         trial['index'] = i
         trial['presented'] = 0
         trial.setdefault('type', 'real')
-        
     return merged
+
 
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
