@@ -152,6 +152,7 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             monitor=Eizo, colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=False,
+            bpc=(10,10,10),
             units='deg', checkTiming=False)
  
 # Get the screen resolution used by PsychoPy
@@ -263,10 +264,10 @@ logging.info(f"Graphics environment set up: {genv}")
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 current_qp = None # Setting global variable so we can print posteriors at the end
 
-# contrast: 20 values spaced log-linearly from 0.01%-100%
+# contrast: 20 values spaced log-linearly from 0.01%-100% (.0001 - 1)
 # spatial_freq: 20 values spaced log-linearly from 2-30 
 stim_domain = {
-    'contrast': np.logspace(np.log10(0.01), np.log10(100), 20) ,
+    'contrast': np.logspace(np.log10(1e-4), np.log10(1), 40) ,
     'spatial_freq': np.logspace(np.log10(2), np.log10(30), 20)
 }
 # Gmax: 20 values spaced log-linearly from 2-1500
@@ -279,7 +280,7 @@ param_domain = {
     'beta_bw': np.logspace(np.log10(0.55), np.log10(9), 20),
     'slope': 3.5,
     'lower_asymptote': 0.5, # Equal to chance
-    'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
+    'lapse_rate': 0.1 # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
@@ -289,7 +290,7 @@ qp = QuestPlus(
     param_domain=param_domain,
     outcome_domain=outcome_domain,
     func='csf_log_parabola',
-    stim_scale='log10'
+    stim_scale='linear'
 )
 
 ####### INITIALIZE EXPERIMENT TRIAL COMPONENTS #################################################################################################################################################################################################### 
