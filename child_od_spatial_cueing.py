@@ -123,6 +123,7 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             monitor=Eizo, colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=False,
+            bpc=(10,10,10),
             units='deg', checkTiming=False)
  
 # Get the screen resolution used by PsychoPy
@@ -232,12 +233,12 @@ logging.info(f"Graphics environment set up: {genv}")
 
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
-stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
+stim_domain  = {'intensity': np.logspace(np.log10(1e-4), np.log10(1), 40)}
 param_domain = {
-    'threshold': np.arange(0.01, 1, 0.01),
+    'threshold':  np.logspace(np.log10(1e-4), np.log10(1), 40),
     'slope': 3.5,
     'lower_asymptote': 0.5, # Equal to chance
-    'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
+    'lapse_rate': np.arange(0, 0.1, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
