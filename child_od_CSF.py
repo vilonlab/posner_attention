@@ -93,8 +93,8 @@ CATCH_TRIAL_TYPES = data.createFactorialTrialList({
             'contrast': CATCH_TRIALS_CONTRASTS
             })
             
-CATCH_TRIAL_PRESENTATIONS = 1 # how many times to present each of the 16 unique CATCH_TRIAL_TYPES throughout all experiment blocks
-TOTAL_CATCH_TRIALS = CATCH_TRIAL_PRESENTATIONS * len(CATCH_TRIAL_TYPES) # total number of real experiment trials
+CATCH_TRIAL_PRESENTATIONS = 2 # how many times to present each of the 16 unique CATCH_TRIAL_TYPES throughout all experiment blocks
+TOTAL_CATCH_TRIALS = CATCH_TRIAL_PRESENTATIONS * len(CATCH_TRIAL_TYPES) # total number of catch trials
 TOTAL_TRIALS = TOTAL_EXP_TRIALS + TOTAL_CATCH_TRIALS
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
@@ -267,7 +267,7 @@ current_qp = None # Setting global variable so we can print posteriors at the en
 # contrast: 20 values spaced log-linearly from 0.01%-100% (.0001 - 1)
 # spatial_freq: 20 values spaced log-linearly from 2-30 
 stim_domain = {
-    'contrast': np.logspace(np.log10(1e-4), np.log10(1), 40) ,
+    'contrast': np.logspace(np.log10(.001), np.log10(1), 40) ,
     'spatial_freq': np.logspace(np.log10(2), np.log10(30), 20)
 }
 # Gmax: 20 values spaced log-linearly from 2-1500
@@ -491,7 +491,7 @@ def consecutive_check(trial_list):
             consecutive_count = 1
     return True  # Valid trial list
         
-def interleave_catch_trials(exp_trial_list, catch_trial_list, min_gap = 4):
+def interleave_catch_trials(exp_trial_list, catch_trial_list, min_gap = 3):
     """ 
     Insert catch trials into exp_trials so that no two catch trials are adjacent.
     
@@ -551,18 +551,26 @@ def create_trial_list(block_type):
                 trialList=EXP_TRIAL_TYPES,
                 seed=None, name='handler_exp')
                 
+        print("PASSED 1")
+                
         exp_trial_sequence = handler_exp.sequenceIndices
         exp_trial_indices = exp_trial_sequence.T.flatten().tolist()
         exp_trials = [dict(handler_exp.trialList[i]) for i in exp_trial_indices]
+        
+        print("PASSED 2")
                 
         handler_catch = data.TrialHandler(nReps=CATCH_TRIAL_PRESENTATIONS, method='random', 
             extraInfo=exp_info, originPath=-1,
             trialList=CATCH_TRIAL_TYPES,
             seed=None, name='handler_catch')
             
+        print("PASSED 3")
+            
         catch_trial_sequence = handler_catch.sequenceIndices
         catch_trial_indices = catch_trial_sequence.T.flatten().tolist()
         catch_trials = [dict(handler_catch.trialList[i]) for i in catch_trial_indices]
+        
+        print("PASSED 4")
         
         for trial in exp_trials:
             trial['type'] = 'real'
@@ -1106,6 +1114,7 @@ elif 'q' in keys:
 
 # Instruction text screen before experiment trials
 show_instructions()
+print("PASSED INSTRUCTIONS")
 
 # Check drift before starting experiment
 drift_check()
@@ -1114,6 +1123,7 @@ drift_check()
 no_resp_trials = []
 trial_list = create_trial_list('experiment')
 block= 1
+print("PASSED CREATE TRIAL LIST")
 
 for trial in trial_list:
     response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)
