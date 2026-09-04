@@ -79,7 +79,7 @@ EXP_TRIAL_TYPES = data.createFactorialTrialList({
             })
 
 # experiment blocks
-EXP_TRIAL_PRESENTATIONS = 32 # how many times to present each of the 4 unique EXP_TRIAL_TYPES throughout all experiment blocks
+EXP_TRIAL_PRESENTATIONS = 40 # how many times to present each of the 4 unique EXP_TRIAL_TYPES throughout all experiment blocks
 TOTAL_EXP_TRIALS = EXP_TRIAL_PRESENTATIONS * len(EXP_TRIAL_TYPES) # total number of real experiment trials
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
 MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
@@ -264,16 +264,17 @@ logging.info(f"Graphics environment set up: {genv}")
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 current_qp = None # Setting global variable so we can print posteriors at the end
 
-# contrast: 20 values spaced log-linearly from 0.01%-100% (.0001 - 1)
-# spatial_freq: 20 values spaced log-linearly from 2-30 
+# contrast: 40 values spaced log-linearly from 0.2%-100% (.002 - 1), as a # proportion (PsychoPy contrast units), NOT percent. 
+# Floor set by 10-bit # quantisation: 1 level = 1/511.5 = 0.002, so contrasts below this are 
+# delivered inaccurately (0.001 requested arrives as ~0.0005). 
+# spatial_freq: 20 values spaced log-linearly from 2-30
 stim_domain = {
-    'contrast': np.logspace(np.log10(.001), np.log10(1), 40) ,
+    'contrast': np.logspace(np.log10(.002), np.log10(1), 40) ,
     'spatial_freq': np.logspace(np.log10(2), np.log10(30), 20)
 }
 # Gmax: 20 values spaced log-linearly from 2-1500
 # Fmax: 20 values spaced log-linearly from 2-30 
 # beta_bw: 20 values spaced log-linearly from 0.55-9 # ANDREW: I got an error when I tried doing 0.5 (ValueError: csf_log_parabola requires beta_bw > 0.5: the denominator log10(2*beta)/2 is zero at exactly 0.5, giving NaN wherever spatial_freq == Fmax, and is non-monotonic below it. Start the grid at ~0.55, or use csf_log_parabola_fwhm instead.)
-# beta_bw: list of values from 1-0.05 with 0.01 steps
 param_domain = {
     'Gmax': np.logspace(np.log10(2), np.log10(1500), 20),
     'Fmax': np.logspace(np.log10(2), np.log10(30), 20), 
@@ -491,43 +492,37 @@ def consecutive_check(trial_list):
             consecutive_count = 1
     return True  # Valid trial list
         
-def interleave_catch_trials(exp_trial_list, catch_trial_list, min_gap = 3):
-    """ 
-    Insert catch trials into exp_trials so that no two catch trials are adjacent.
-    
-    min_gap is the minimum number of exp trials between catch trials. 
+def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
     """
-    n_exp = len(exp_trial_list)
-    n_catch = len(catch_trial_list)
-    
+    Insert catch trials at even intervals through exp_trials.
+
+    Spacing is derived from the two list lengths, so every catch trial is used
+    and the interval is n_exp / n_catch (160 exp / 32 catch -> one catch every
+    5 exp trials). jitter=k shifts each catch trial up to k positions either
+    way; jitter=0 is strictly periodic. Cannot fail, so no retry loop.
+    """
+    n_exp, n_catch = len(exp_trial_list), len(catch_trial_list)
     if n_catch == 0:
-        return exp_trials
-        
-    while True:
-        slots = list(range(n_exp+1))
-        shuffle(slots)
-        
-        chosen_slots = []
-        for slot in slots:
-            if all(abs(slot-s) > min_gap for s in chosen_slots):
-                chosen_slots.append(slot)
-                if len(chosen_slots) == n_catch:
-                    break
-                    
-        if len(chosen_slots) == n_catch:
-            break
-            
+        return exp_trial_list
+
+    slots = [round((i + 1) * n_exp / n_catch) for i in range(n_catch)]
+
+    if jitter:
+        slots = [min(max(s + randint(-jitter, jitter + 1), 0), n_exp)
+                 for s in slots] # numpy randint upper bound is exclusive
+        slots.sort()
+
     merged = exp_trial_list[:]
-    for slot, catch_trial in sorted(zip(chosen_slots, catch_trial_list), reverse=True):
+    for slot, catch_trial in sorted(zip(slots, catch_trial_list),
+                                    key=lambda p: p[0], reverse=True):
         catch_trial = dict(catch_trial)
         catch_trial['type'] = 'catch'
         merged.insert(slot, catch_trial)
-        
+
     for i, trial in enumerate(merged, start=1):
         trial['index'] = i
         trial['presented'] = 0
         trial.setdefault('type', 'real')
-        
     return merged
 
 # Get the full list of trials created by the handler
@@ -551,26 +546,19 @@ def create_trial_list(block_type):
                 trialList=EXP_TRIAL_TYPES,
                 seed=None, name='handler_exp')
                 
-        print("PASSED 1")
                 
         exp_trial_sequence = handler_exp.sequenceIndices
         exp_trial_indices = exp_trial_sequence.T.flatten().tolist()
         exp_trials = [dict(handler_exp.trialList[i]) for i in exp_trial_indices]
-        
-        print("PASSED 2")
                 
         handler_catch = data.TrialHandler(nReps=CATCH_TRIAL_PRESENTATIONS, method='random', 
             extraInfo=exp_info, originPath=-1,
             trialList=CATCH_TRIAL_TYPES,
             seed=None, name='handler_catch')
             
-        print("PASSED 3")
-            
         catch_trial_sequence = handler_catch.sequenceIndices
         catch_trial_indices = catch_trial_sequence.T.flatten().tolist()
         catch_trials = [dict(handler_catch.trialList[i]) for i in catch_trial_indices]
-        
-        print("PASSED 4")
         
         for trial in exp_trials:
             trial['type'] = 'real'
@@ -1114,7 +1102,6 @@ elif 'q' in keys:
 
 # Instruction text screen before experiment trials
 show_instructions()
-print("PASSED INSTRUCTIONS")
 
 # Check drift before starting experiment
 drift_check()
@@ -1123,7 +1110,6 @@ drift_check()
 no_resp_trials = []
 trial_list = create_trial_list('experiment')
 block= 1
-print("PASSED CREATE TRIAL LIST")
 
 for trial in trial_list:
     response = run_trial(trial, practice = False, practice_contrasts = None, block_num = block)

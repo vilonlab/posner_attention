@@ -23,7 +23,7 @@ from EyeLinkCoreGraphicsPsychoPy import EyeLinkCoreGraphicsPsychoPy
 globalClock = core.Clock() # initialize global clock
 trialClock = core.Clock() # initialize trial-level clock (gets reset at the start of each trial loop)
 
-EYETRACKER_OFF = False # Set to True to run the script without eyetracking
+EYETRACKER_OFF = True # Set to True to run the script without eyetracking
 RESPONSE_KEYS = ['1', '2'] # 1 for vertical, 2 for horizontal
 
 # trial conditions
@@ -241,12 +241,12 @@ logging.info(f"Graphics environment set up: {genv}")
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 current_qp = None # Setting global variable so we can print posteriors at the end
 
-stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
+stim_domain = {'intensity': np.logspace(np.log10(.002), np.log10(1), 40)}
 param_domain = {
-    'threshold': np.arange(0.01, 1, 0.01),
+    'threshold': np.logspace(np.log10(.002), np.log10(1), 40),
     'slope': 3.5,
     'lower_asymptote': 0.5, # Equal to chance
-    'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
+    'lapse_rate': np.arange(0, 0.1, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
