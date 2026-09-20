@@ -323,14 +323,14 @@ gabor_inst1 = visual.GratingStim(
     ori=90, pos=(-POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(LOW_SPATIAL_FREQ), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=0.5, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
+    texRes=512.0, interpolate=True, depth=-2.0)
 gabor_inst2 = visual.GratingStim(
     win=win, name='gabor_inst2',units='deg', 
     tex='sin', mask='gauss', anchor='center',
     ori=0.0, pos=(POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(HIGH_SPATIAL_FREQ), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=0.5, blendmode='avg',
-    texRes=128.0, interpolate=True, depth=-2.0)
+    texRes=512.0, interpolate=True, depth=-2.0)
 fix_cross = visual.ShapeStim(
     win=win, name='fix_cross', vertices='cross',units='deg', 
     size=(FIXCROSS_SIZE, FIXCROSS_SIZE),
@@ -349,14 +349,14 @@ gabor = visual.GratingStim(
     ori=0.0, pos=(POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(LOW_SPATIAL_FREQ), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=1.0, blendmode='avg',
-    texRes=128.0, interpolate=True)
+    texRes=512.0, interpolate=True)
 feedback_image = visual.ImageStim(win=win,
     name='feedback_image', units='deg', 
     image='sin', mask=None,
     ori=0, pos=(0, 2.5), size=(5, 5),
     color=[1,1,1], colorSpace='rgb', opacity=1,
     flipHoriz=False, flipVert=False,
-    texRes=128, interpolate=True, depth=-1.0)
+    texRes=512, interpolate=True, depth=-1.0)
 feedback_text = visual.TextStim(win=win, name='feedback_text',
     text="", font='Arial',
     units='deg', pos=(0, -2.5), draggable=False, height=1.2, wrapWidth=1700, ori=0, 
@@ -698,6 +698,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         if trial['type'] == 'catch':
             intensity = trial['contrast']
             gabor.contrast = intensity
+        elif trial['type'] != 'prac':
+            raise ValueError(f"unhandled trial type: {trial['type']!r}")
     
     # Set practice-specific variables
     if practice: 
@@ -721,11 +723,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         
         if trial['type'] == 'real':
             global qp
-            # Save parameters from QP
-            gmax = qp.param_estimate['Gmax']
-            fmax = qp.param_estimate['Fmax']
-            beta_bw = qp.param_estimate['beta_bw']
-            lapse_rate = qp.param_estimate['lapse_rate']
+
             
             # Update gabor contrast parameters from current staircase
             next_stim = qp.next_stim
@@ -882,6 +880,10 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             ) else 0
         if not practice and trial['type'] == 'real':
             qp.update(stim=next_stim, outcome={'response': response})
+            # Save parameters from QP
+            gmax = qp.param_estimate['Gmax']
+            fmax = qp.param_estimate['Fmax']
+            beta_bw = qp.param_estimate['beta_bw']
         elif practice:
             if response == 1:
                 feedback_text.text = "Correct!"
@@ -921,8 +923,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     el_tracker.sendMessage('!V TRIAL_VAR gabor_intensity %s' % intensity)
     el_tracker.sendMessage('!V TRIAL_VAR spatial_freq %s' % frequency)
     try:
-        el_tracker.sendMessage('!V TRIAL_VAR keypress %d' % key_name)
-        el_tracker.sendMessage('!V TRIAL_VAR accuracy %d' % response)
+        el_tracker.sendMessage('!V TRIAL_VAR keypress %s' % key_name)
+        el_tracker.sendMessage('!V TRIAL_VAR accuracy %s' % response)
     except:
         el_tracker.sendMessage('!V TRIAL_VAR rt -1')
     el_tracker.sendMessage('!V CLEAR 128 128 128')
