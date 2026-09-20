@@ -141,7 +141,7 @@ logFile = logging.LogFile(filename + '.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # set logging level: warnings, errors, and critical messages will be displayed in output console
 
 # Window setup for EIZO monitor
-view_dist_cm = 60
+view_dist_cm = 160
 screen_w_cm = 51.84
 screen_w_px = 1920
 Eizo = monitors.Monitor('Eizo', width = screen_w_cm, distance = view_dist_cm)
@@ -491,13 +491,8 @@ def consecutive_check(trial_list):
         else:
             consecutive_count = 1
     return True  # Valid trial list
-<<<<<<< HEAD
-        
-def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
-=======
 
-def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=0):
->>>>>>> 07c1df40c46f1b7826bd5befe90eee986b7b54f9
+def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
     """
     Insert catch trials at even intervals through exp_trials.
 
@@ -513,13 +508,10 @@ def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=0):
     slots = [round((i + 1) * n_exp / n_catch) for i in range(n_catch)]
 
     if jitter:
-<<<<<<< HEAD
+
         slots = [min(max(s + randint(-jitter, jitter + 1), 0), n_exp)
                  for s in slots] # numpy randint upper bound is exclusive
-=======
-        slots = [min(max(s + random.randint(-jitter, jitter), 0), n_exp)
-                 for s in slots]
->>>>>>> 07c1df40c46f1b7826bd5befe90eee986b7b54f9
+                 
         slots.sort()
 
     merged = exp_trial_list[:]
