@@ -82,7 +82,7 @@ EXP_TRIAL_TYPES = data.createFactorialTrialList({
 EXP_TRIAL_PRESENTATIONS = 40 # how many times to present each of the 4 unique EXP_TRIAL_TYPES throughout all experiment blocks
 TOTAL_EXP_TRIALS = EXP_TRIAL_PRESENTATIONS * len(EXP_TRIAL_TYPES) # total number of real experiment trials
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
-MAX_RECOVERY_TRIALS = 42 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
+MAX_RECOVERY_TRIALS = 56 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
 CATCH_TRIALS_CONTRASTS = [0.8, 1.0] # possible contrasts for catch trials
 
 # get all 16 unique catch trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1})
@@ -491,8 +491,13 @@ def consecutive_check(trial_list):
         else:
             consecutive_count = 1
     return True  # Valid trial list
+<<<<<<< HEAD
         
 def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
+=======
+
+def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=0):
+>>>>>>> 07c1df40c46f1b7826bd5befe90eee986b7b54f9
     """
     Insert catch trials at even intervals through exp_trials.
 
@@ -508,8 +513,13 @@ def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
     slots = [round((i + 1) * n_exp / n_catch) for i in range(n_catch)]
 
     if jitter:
+<<<<<<< HEAD
         slots = [min(max(s + randint(-jitter, jitter + 1), 0), n_exp)
                  for s in slots] # numpy randint upper bound is exclusive
+=======
+        slots = [min(max(s + random.randint(-jitter, jitter), 0), n_exp)
+                 for s in slots]
+>>>>>>> 07c1df40c46f1b7826bd5befe90eee986b7b54f9
         slots.sort()
 
     merged = exp_trial_list[:]
@@ -524,6 +534,7 @@ def interleave_catch_trials(exp_trial_list, catch_trial_list, jitter=1):
         trial['presented'] = 0
         trial.setdefault('type', 'real')
     return merged
+
 
 # Get the full list of trials created by the handler
 def create_trial_list(block_type):
