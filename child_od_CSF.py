@@ -36,8 +36,8 @@ GABOR_POSITIONS = [-1, 1] # -1 = Left, 1 = Right
 # stims (deg)
 TARGET_SIZE = 2
 FIXCROSS_SIZE = 0.75
-ANDYFIX_SIZE = 1.5
-POSITION = np.array([6.0, 0.0]) # DVA eccentricity for target
+ANDYFIX_SIZE = 1
+POSITION = np.array([1.5, 0.0]) # DVA eccentricity for target
 
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
@@ -300,22 +300,22 @@ kb = keyboard.Keyboard()
 welcome_text = visual.TextStim(win=win, name='welcome_text',
     text='''Welcome to the Zebra Flies Game!''',
     font='Arial', units='deg', 
-    pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
+    pos=(0, 0), draggable=False, height=.75, wrapWidth=16, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
     languageStyle='LTR',depth=0.0)
-andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
+andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 4), height=.6, wrapWidth=16, 
     color='black', colorSpace='rgb')
 gabors_text = visual.TextStim(win=win, text="Andy wants to learn about zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
-    font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
+    font='Arial', units='deg', pos=(0, 0), height=.6, wrapWidth=16, 
     color='black', colorSpace='rgb')
 zebraflies_img = visual.ImageStim(win=win,
     image = "Images/zebraflies.png",
     name='zebraflies_img', units='deg', 
-    mask=None, ori=0, pos=(0, -3), 
-    size = (30,18.75), colorSpace='rgb')
+    mask=None, ori=0, pos=(0, -1), 
+    size = (15,9.375), colorSpace='rgb')
 instruct_text = visual.TextStim(win=win, name='instruct_text',
     text="", font='Arial', units='deg', pos=(0, 0), draggable=False, 
-    height=1.2, wrapWidth=1700, ori=0, color='black', colorSpace='rgb', 
+    height=.6, wrapWidth=16, ori=0, color='black', colorSpace='rgb', 
     opacity=1,languageStyle='LTR',depth=0.0)
 gabor_inst1 = visual.GratingStim(
     win=win, name='gabor_inst1',units='deg', 
@@ -353,26 +353,26 @@ gabor = visual.GratingStim(
 feedback_image = visual.ImageStim(win=win,
     name='feedback_image', units='deg', 
     image='sin', mask=None,
-    ori=0, pos=(0, 2.5), size=(5, 5),
+    ori=0, pos=(0, 1.5), size=(3, 3),
     color=[1,1,1], colorSpace='rgb', opacity=1,
     flipHoriz=False, flipVert=False,
     texRes=512, interpolate=True, depth=-1.0)
 feedback_text = visual.TextStim(win=win, name='feedback_text',
     text="", font='Arial',
-    units='deg', pos=(0, -2.5), draggable=False, height=1.2, wrapWidth=1700, ori=0, 
+    units='deg', pos=(0, -1.5), draggable=False, height=.6, wrapWidth=16, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
     languageStyle='LTR',depth=0.0)
 happy_sound = sound.Sound('sounds/happy_ribbit.wav')
 sad_sound = sound.Sound('sounds/sad_ribbit.wav')
 prac_outcome_text = visual.TextStim(win=win, name='prac_outcome_text',
     text="", font ='Arial', color= 'black',
-    units='deg', pos=(0, 0), draggable=False, height=1.2, wrapWidth=1700, ori=0)
+    units='deg', pos=(0, 0), draggable=False, height=.6, wrapWidth=16, ori=0)
 break_text = visual.TextStim(win=win, name='break_text',
     text="Great job!\nLet's take a quick break!", font ='Arial', color= 'black',
-    units='deg', pos=(0, 0), draggable=False, height=1.2, wrapWidth=1700, ori=0)
+    units='deg', pos=(0, 0), draggable=False, height=.6, wrapWidth=16, ori=0)
 end_text = visual.TextStim(win=win, name='end_text',
     text="You finished the game!", font='Arial', units = 'deg',
-    pos=(0, 0), draggable=False, height=1.5, wrapWidth=1700, ori=0, 
+    pos=(0, 0), draggable=False, height=.75, wrapWidth=16, ori=0, 
     color='black', colorSpace='rgb', opacity=1, 
     languageStyle='LTR',depth=0.0)
 
@@ -721,9 +721,10 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         TARGET_DUR = EXP_TARGET_DUR
         block_type = f'exp{block_num}'
         
+        gmax = fmax = beta_bw = lapse_rate = float('nan')
+        
         if trial['type'] == 'real':
             global qp
-
             
             # Update gabor contrast parameters from current staircase
             next_stim = qp.next_stim
@@ -884,6 +885,8 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             gmax = qp.param_estimate['Gmax']
             fmax = qp.param_estimate['Fmax']
             beta_bw = qp.param_estimate['beta_bw']
+            lapse_rate = param_domain['lapse_rate']
+            
         elif practice:
             if response == 1:
                 feedback_text.text = "Correct!"
