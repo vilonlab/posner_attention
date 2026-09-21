@@ -51,10 +51,10 @@ MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented afte
 TRIALS_PER_BLOCK = 48
 
 # stims (deg)
-CUE_SIZE = .5
-TARGET_SIZE = 2
+CUE_SIZE = .75
+TARGET_SIZE = 2.5
 FIXCROSS_SIZE = 0.75
-ANDYFIX_SIZE = 1.5
+ANDYFIX_SIZE = 1
 POSITION = np.array([6.0, 0.0]) # DVA eccentricity for target and cues
 GAZE_BOUNDS = 3 # if gaze shifts more than this from fixation point, trial is aborted 
 HIGH_SPATIAL_FREQ = 8
@@ -227,12 +227,12 @@ logging.info(f"Graphics environment set up: {genv}")
 
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
-stim_domain = {'intensity': np.arange(0.01, 1, 0.01)}
+stim_domain = {'intensity': np.logspace(np.log10(0.001), np.log10(1), 40)}
 param_domain = {
     'threshold': np.arange(0.01, 1, 0.01),
     'slope': 3.5,
     'lower_asymptote': 0.5, # Equal to chance
-    'lapse_rate': np.arange(0, 0.05, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
+    'lapse_rate': np.arange(0, 0.11, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
 outcome_domain = {'response': [1,0]}  # I'm going to flip this, to see if it fixes the way I intuitively think the algorithm should work; TDW 2025-01-22
 
@@ -303,14 +303,14 @@ gabor = visual.GratingStim(
     ori=0.0, pos=(POSITION[0],POSITION[1]), size=(TARGET_SIZE, TARGET_SIZE), sf=(HIGH_SPATIAL_FREQ), phase=0.0,
     color=[1,1,1], colorSpace='rgb',
     opacity=1.0, contrast=1.0, blendmode='avg',
-    texRes=128.0, interpolate=True)
+    texRes=512.0, interpolate=True)
 feedback_image = visual.ImageStim(win=win,
     name='feedback_image', units='deg', 
     image='sin', mask=None,
     ori=0, pos=(0, 2.5), size=(5, 5),
     color=[1,1,1], colorSpace='rgb', opacity=1,
     flipHoriz=False, flipVert=False,
-    texRes=128, interpolate=True, depth=-1.0)
+    texRes=512, interpolate=True, depth=-1.0)
 feedback_text = visual.TextStim(win=win, name='feedback_text',
     text="", font='Arial',
     units='deg', pos=(0, -2.5), draggable=False, height=1.2, wrapWidth=1700, ori=0, 
@@ -615,14 +615,14 @@ def show_instructions(block_num=None):
         ori=90, pos=(5,0), size=(4,4), sf=(HIGH_SPATIAL_FREQ), phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=1.0, contrast=0.5, blendmode='avg',
-        texRes=128.0, interpolate=True, depth=-2.0)
+        texRes=512.0, interpolate=True, depth=-2.0)
     gabor_inst2 = visual.GratingStim(
         win=win, name='gabor_inst2',units='deg', 
         tex='sin', mask='gauss', anchor='center',
         ori=0.0, pos=(-5,0), size=(4,4), sf=(LOW_SPATIAL_FREQ), phase=0.0,
         color=[1,1,1], colorSpace='rgb',
         opacity=1.0, contrast=0.5, blendmode='avg',
-        texRes=128.0, interpolate=True, depth=-2.0)
+        texRes=512.0, interpolate=True, depth=-2.0)
         
     if block_num == 0:
         instruct_text.text = '''Zebra flies are really shy!'''

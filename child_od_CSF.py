@@ -34,10 +34,10 @@ ORIENTATIONS = [0, 90] # 0 - vertical; 90 - horizontal
 GABOR_POSITIONS = [-1, 1] # -1 = Left, 1 = Right 
 
 # stims (deg)
-TARGET_SIZE = 2
+TARGET_SIZE = 4
 FIXCROSS_SIZE = 0.75
-ANDYFIX_SIZE = 1
-POSITION = np.array([1.5, 0.0]) # DVA eccentricity for target
+ANDYFIX_SIZE = 0.75
+POSITION = np.array([3, 0.0]) # DVA eccentricity for target
 
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
@@ -305,14 +305,14 @@ welcome_text = visual.TextStim(win=win, name='welcome_text',
     languageStyle='LTR',depth=0.0)
 andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 4), height=.6, wrapWidth=16, 
     color='black', colorSpace='rgb')
-gabors_text = visual.TextStim(win=win, text="Andy wants to learn about zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
-    font='Arial', units='deg', pos=(0, 0), height=.6, wrapWidth=16, 
+gabors_text = visual.TextStim(win=win, text="Andy wants to learn about zebra flies like these!", 
+    font='Arial', units='deg', pos=(0, 4.2), height=0.6, wrapWidth=16, 
     color='black', colorSpace='rgb')
 zebraflies_img = visual.ImageStim(win=win,
     image = "Images/zebraflies.png",
     name='zebraflies_img', units='deg', 
-    mask=None, ori=0, pos=(0, -1), 
-    size = (15,9.375), colorSpace='rgb')
+    mask=None, ori=0, pos=(0, -1.5), 
+    size = (12,7.5), colorSpace='rgb')
 instruct_text = visual.TextStim(win=win, name='instruct_text',
     text="", font='Arial', units='deg', pos=(0, 0), draggable=False, 
     height=.6, wrapWidth=16, ori=0, color='black', colorSpace='rgb', 
@@ -1102,9 +1102,9 @@ elif 'q' in keys:
 
 ####### PRACTICE BLOCKS #################################################################################################################################################################################################### 
 
-#run_practice_block(1) # target stays on screen for unlimited amount of time, experimenter-paced
-#run_practice_block(2) # target presented for extended time
-#run_practice_block(3) # exactly like experiment trials
+run_practice_block(1) # target stays on screen for unlimited amount of time, experimenter-paced
+run_practice_block(2) # target presented for extended time
+run_practice_block(3) # exactly like experiment trials
     
 ####### EXPERIMENT BLOCKS #################################################################################################################################################################################################### 
 
