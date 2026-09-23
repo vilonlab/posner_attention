@@ -75,7 +75,7 @@ PRACT1_PRESENTATIONS = 1 # how many times to present each of the unique TRIAL_TY
 PRACT1_CONTRASTS = [0.05, 0.1, 0.3, 1.0] # contrasts for trials in practice block 1
 
 # practice blocks 2  & 3
-PTRIAL_PRESENTATIONS = 2 # how many times to present each of the unique TRIAL_TYPES in practice blocks 2 and 3
+PTRIAL_PRESENTATIONS = 1 # how many times to present each of the unique TRIAL_TYPES in practice blocks 2 and 3
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(PRAC_TRIAL_TYPES) # total trials in practice blocks 2 and 3
 PRACT_CONTRASTS = PRACT1_CONTRASTS # gabor contrast values
 EXTENDED_TARGET_DUR = 1 # target duration for practice block 2
