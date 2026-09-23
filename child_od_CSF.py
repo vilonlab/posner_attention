@@ -43,34 +43,42 @@ POSITION = np.array([3, 0.0]) # DVA eccentricity for target
 frameTolerance = 0.001  # How close to onset before 'same' frame
 FIX_CROSS_DUR = 1.0 # duration of fixation cross at start of trial
 ANDY_FIX_DUR = 0.5 # Andy to signal start of trial
-EXP_TARGET_DUR = 1.0 # target gabor duration for experiment trials
+ = 1.0 # target gabor duration for experiment trials
 RESPONSE_WINDOW = 2.0 # duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
 FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
 
 # all practice blocks
-ACCURACY_THRESHOLD = 75 # accuracy needed to pass the practice blocks
+ACCURACY_THRESHOLD = 67 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
-FREQ_CONDITIONS = ['High', 'Low'] 
-HIGH_SPATIAL_FREQ = 8
+PRAC_FREQ_CONDITIONS = ['Mid', 'Low'] 
+HIGH_SPATIAL_FREQ = 16
+MID_SPATIAL_FREQ = 8
 LOW_SPATIAL_FREQ = 2
+
+SPATIAL_FREQS = {'High': HIGH_SPATIAL_FREQ,
+                 'Mid':  MID_SPATIAL_FREQ,
+                 'Low':  LOW_SPATIAL_FREQ}
+
 MAX_CONSECUTIVE_TRIALS = 3 # maximum number of consecutive trials of the same sf condition (high, low)
 
 # get all 8 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1, 'freq_condition': 'High'})
 PRAC_TRIAL_TYPES = data.createFactorialTrialList({
             'orientation': ORIENTATIONS,
             'gabor_position': GABOR_POSITIONS,
-            'freq_condition': FREQ_CONDITIONS 
+            'freq_condition': PRAC_FREQ_CONDITIONS 
             })
+
+
             
 # practice block 1
-PRACT1_PRESENTATIONS = 1 # how many times to present each of the 8 unique TRIAL_TYPES in practice block 1
-PRACT1_CONTRASTS = [0.1, 0.2, 0.5, 1.0] # contrasts for trials in practice block 1
+PRACT1_PRESENTATIONS = 1 # how many times to present each of the unique TRIAL_TYPES in practice block 1
+PRACT1_CONTRASTS = [0.05, 0.1, 0.3, 1.0] # contrasts for trials in practice block 1
 
 # practice blocks 2  & 3
-PTRIAL_PRESENTATIONS = 2 # how many times to present each of the 8 unique TRIAL_TYPES in practice blocks 2 and 3
+PTRIAL_PRESENTATIONS = 2 # how many times to present each of the unique TRIAL_TYPES in practice blocks 2 and 3
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(PRAC_TRIAL_TYPES) # total trials in practice blocks 2 and 3
-PRACT_CONTRASTS = [0.1, 0.4, 0.7, 1.0] # gabor contrast values; keep length to a factor of 8
-EXTENDED_TARGET_DUR = 0.5 # target duration for practice block 2
+PRACT_CONTRASTS = PRACT1_CONTRASTS # gabor contrast values; keep length to a factor of 8
+EXTENDED_TARGET_DUR = 1 # target duration for practice block 2
 
 # get all 4 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1})
 EXP_TRIAL_TYPES = data.createFactorialTrialList({
@@ -83,6 +91,7 @@ EXP_TRIAL_PRESENTATIONS = 40 # how many times to present each of the 4 unique EX
 TOTAL_EXP_TRIALS = EXP_TRIAL_PRESENTATIONS * len(EXP_TRIAL_TYPES) # total number of real experiment trials
 MAX_TRIAL_REPEATS = 3 # maximum number of times each trial can be presented after no response (includes initial presentation)
 MAX_RECOVERY_TRIALS = 56 # maximum number of trials to present per recovery block (if there are more than 42 to repeat, there will be an additional recovery block)
+FREQ_CONDITIONS = ['Mid', 'Low'] # for catch trials
 CATCH_TRIALS_CONTRASTS = [0.8, 1.0] # possible contrasts for catch trials
 
 # get all 16 unique catch trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1})
@@ -693,7 +702,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     gabor.pos = np.array([POSITION[0] * trial['gabor_position'], POSITION[1]])
     gabor.ori = trial['orientation']
     if trial['type'] != 'real':
-        frequency = HIGH_SPATIAL_FREQ if trial['freq_condition'] == 'High' else LOW_SPATIAL_FREQ
+        frequency = SPATIAL_FREQS[trial['freq_condition']] 
         gabor.sf = frequency
         if trial['type'] == 'catch':
             intensity = trial['contrast']
