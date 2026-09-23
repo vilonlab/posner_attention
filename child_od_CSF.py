@@ -42,8 +42,8 @@ POSITION = np.array([3, 0.0]) # DVA eccentricity for target
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
 FIX_CROSS_DUR = 1.0 # duration of fixation cross at start of trial
-ANDY_FIX_DUR = 0.5 # Andy to signal start of trial
- = 1.0 # target gabor duration for experiment trials
+ANDY_FIX_DUR = 1.0 # Andy to signal start of trial
+EXP_TARGET_DUR = 0.5 # target gabor duration for experiment trials
 RESPONSE_WINDOW = 2.0 # duration of andy fixation after target offset; total response window is TARGET_DUR + RESPONSE_WINDOW
 FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
 
@@ -288,7 +288,7 @@ param_domain = {
     'Gmax': np.logspace(np.log10(2), np.log10(1500), 20),
     'Fmax': np.logspace(np.log10(2), np.log10(30), 20), 
     'beta_bw': np.logspace(np.log10(0.55), np.log10(9), 20),
-    'slope': 3.5,
+    'slope': 3,
     'lower_asymptote': 0.5, # Equal to chance
     'lapse_rate': 0.1 # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
