@@ -50,7 +50,7 @@ FEEDBACK_DUR = 1.0 # duration of feedback presentation for practice blocks
 # all practice blocks
 ACCURACY_THRESHOLD = 67 # accuracy needed to pass the practice blocks
 MAX_PRACTICE_REPEATS = 2 # maximum number of times each practice block can be repeated before experiment ends
-PRAC_FREQ_CONDITIONS = ['Mid', 'Low'] 
+PRAC_FREQ_CONDITIONS = ['High','Mid', 'Low'] 
 HIGH_SPATIAL_FREQ = 16
 MID_SPATIAL_FREQ = 8
 LOW_SPATIAL_FREQ = 2
@@ -77,7 +77,7 @@ PRACT1_CONTRASTS = [0.05, 0.1, 0.3, 1.0] # contrasts for trials in practice bloc
 # practice blocks 2  & 3
 PTRIAL_PRESENTATIONS = 2 # how many times to present each of the unique TRIAL_TYPES in practice blocks 2 and 3
 PTOTAL_TRIALS = PTRIAL_PRESENTATIONS * len(PRAC_TRIAL_TYPES) # total trials in practice blocks 2 and 3
-PRACT_CONTRASTS = PRACT1_CONTRASTS # gabor contrast values; keep length to a factor of 8
+PRACT_CONTRASTS = PRACT1_CONTRASTS # gabor contrast values
 EXTENDED_TARGET_DUR = 1 # target duration for practice block 2
 
 # get all 4 unique trial types by combining the trial variables (e.g., one trial type is: {'orientation': 0,  'gabor_position': -1})
@@ -961,7 +961,7 @@ def run_practice_block(block_num):
     repeat_count = 0
     
     if block_num == 1:
-        while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+        while accuracy < ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
             drift_check()
             
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
@@ -1011,7 +1011,7 @@ def run_practice_block(block_num):
             thisExp.addData(f'practice{block_num}.end', globalClock.getTime(format='float'))
     
     elif block_num > 1:
-        while accuracy <= ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
+        while accuracy < ACCURACY_THRESHOLD and repeat_count < MAX_PRACTICE_REPEATS:
             drift_check()
            
             thisExp.addData(f'practice{block_num}.start', globalClock.getTime(format='float'))
