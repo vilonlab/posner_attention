@@ -118,6 +118,7 @@ win = visual.Window(fullscr=True, color=[0,0,0],
             monitor=Eizo, colorSpace='rgb',
             backgroundImage='', backgroundFit='none',
             blendMode='avg', useFBO=False,
+            bpc=(10,10,10),
             units='deg', checkTiming=False)
  
 # Get the screen resolution used by PsychoPy
@@ -227,10 +228,10 @@ logging.info(f"Graphics environment set up: {genv}")
 
 ####### QUESTPLUS INITIALIZATION ####################################################################################################################################################################################################
 
-stim_domain = {'intensity': np.logspace(np.log10(0.001), np.log10(1), 40)}
+stim_domain = {'intensity': np.logspace(np.log10(0.002), np.log10(1), 40)}
 param_domain = {
-    'threshold': np.arange(0.01, 1, 0.01),
-    'slope': 3.5,
+    'threshold': np.logspace(np.log10(0.002), np.log10(1), 40),
+    'slope': 3,
     'lower_asymptote': 0.5, # Equal to chance
     'lapse_rate': np.arange(0, 0.11, 0.01) # Test 0:0.05 for adults, Consider 0:0.10 for children
 }
@@ -1142,7 +1143,9 @@ else:
 ####### INSTRUCTIONS  #################################################################################################################################################################################################### 
 
 # Andy screen
-andy_text = visual.TextStim(win=win, text="This is Andy the Frog!", font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=1700, 
+andy_text = visual.TextStim(win=win, 
+    text="This is Andy the Frog!", 
+    font='Arial', units='deg', pos=(0, 6), height=1.2, wrapWidth=20, 
     color='black', colorSpace='rgb')
 andy_text.draw()
 andy_fix.draw()
@@ -1154,14 +1157,15 @@ elif 'q' in keys:
     show_end()
     
 # Gabors screen
-gabors_text = visual.TextStim(win=win, text="Andy wants to catch zebra flies like these!\n\n\n\n\n\n\n\n\n\n\n", 
-    font='Arial', units='deg', pos=(0, 0), height=1.2, wrapWidth=1700, 
+gabors_text = visual.TextStim(win=win,
+    text="Andy wants to catch zebra flies like these!",
+    font='Arial', units='deg', pos=(0, 9), height=1.0, wrapWidth=20,
     color='black', colorSpace='rgb')
+
 zebraflies_img = visual.ImageStim(win=win,
-    image = "Images/zebraflies.png",
-    name='zebraflies_img', units='deg', 
-    mask=None, ori=0, pos=(0, -3), 
-    size = (30,18.75), colorSpace='rgb')
+    image="Images/zebraflies.png",
+    name='zebraflies_img', units='deg',
+    mask=None, ori=0, pos=(0, -2), size=(20, 12.5), colorSpace='rgb')
 
 gabors_text.draw()
 zebraflies_img.draw()
