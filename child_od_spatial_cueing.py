@@ -55,7 +55,7 @@ FIXCROSS_SIZE = 0.75
 ANDYFIX_SIZE = 1
 POSITION = np.array([6.0, 0.0]) # DVA eccentricity for target and cues
 GAZE_BOUNDS = 3 # if gaze shifts more than this from fixation point, trial is aborted 
-SPATIAL_FREQUENCY = 5
+
 
 # timing (s)
 frameTolerance = 0.001  # How close to onset before 'same' frame
@@ -70,34 +70,72 @@ LOSS_THRESHOLD = 0.1 # maximum amount of time sample can lose track of the eye b
 
 ####### WINDOW, DATA FILE, & EYETRACKER SETUP ####################################################################################################################################################################################################
 
-# Collect participant ID, visit number, number of blocks and check that the inputted variables are valid
+SCREEN_W_CM = 51.84          # CG2400S viewable width
+SCREEN_W_PX = 1920
+MIN_PX_PER_CYCLE = 4         # below this a grating aliases
+
 exp_name = 'ZebraFliesTask_spatial_cueing'
 exp_info = {
     'SubID': '',
     'Visit': '',
-    'Blocks':'Ex. 4,6,8'}
+    'Blocks': 'Ex. 4,6,8',
+    'Spatial frequency (c/deg)': [2, 8],     # list renders as a dropdown
+    'Viewing distance (cm)': '65'}
+
+allowed_char = ascii_letters + digits + '_'
+error_msg = ''
+
 while True:
-    dlg = gui.DlgFromDict(dictionary=exp_info, title=exp_name)
+    title = exp_name if not error_msg else f'{exp_name} - {error_msg}'
+    dlg = gui.DlgFromDict(dictionary=exp_info, title=title)
     if dlg.OK == False:
         core.quit()
         sys.exit()
 
-    # get blocks and write edf filename
-    blocks = int(exp_info['Blocks'])
+    try:
+        blocks = int(exp_info['Blocks'])
+    except ValueError:
+        error_msg = 'Blocks must be a whole number'
+        continue
+
+    try:
+        view_dist_cm = float(exp_info['Viewing distance (cm)'])
+    except ValueError:
+        error_msg = 'Viewing distance must be a number'
+        continue
+
+    SPATIAL_FREQUENCY = float(exp_info['Spatial frequency (c/deg)'])
+
     participant_id = exp_info['SubID']
     edf_filename = f"{participant_id}_ET"
 
-    # check if the filename and number of blocks are valid
-    allowed_char = ascii_letters + digits + '_'
+    # can the display actually render this grating at this distance?
+    px_per_deg = (SCREEN_W_PX / SCREEN_W_CM) * 2 * view_dist_cm * math.tan(math.radians(0.5))
+    px_per_cycle = px_per_deg / SPATIAL_FREQUENCY
+    min_dist = (MIN_PX_PER_CYCLE * SPATIAL_FREQUENCY) / \
+               ((SCREEN_W_PX / SCREEN_W_CM) * 2 * math.tan(math.radians(0.5)))
+
     if not all([c in allowed_char for c in edf_filename]):
-        raise ValueError('ERROR: Invalid EDF filename. Enter only letters, digits, or underscores.')
+        error_msg = 'ID: letters, digits and underscores only'
+        continue
     elif len(edf_filename) > 8:
-        raise ValueError("ERROR: Invalid EDF filename: participant ID must be ≤5 characters.")
-    elif (TOTAL_TRIALS)%blocks != 0:
-        raise ValueError(f"ERROR: Invalid number of blocks. Must be a factor of {TOTAL_TRIALS}.")
+        error_msg = 'ID must be 5 characters or fewer'
+        continue
+    elif TOTAL_TRIALS % blocks != 0:
+        error_msg = f'Blocks must divide {TOTAL_TRIALS} evenly'
+        continue
+    elif not 50 <= view_dist_cm <= 70:
+        error_msg = 'Viewing distance must be 50-70 cm'
+        continue
+    elif px_per_cycle < MIN_PX_PER_CYCLE:
+        error_msg = f'{SPATIAL_FREQUENCY:g} c/deg needs at least {min_dist:.0f} cm'
+        continue
     else:
         break
 
+print(f"{SPATIAL_FREQUENCY:g} c/deg at {view_dist_cm:g} cm: "
+      f"{px_per_deg:.1f} px/deg, {px_per_cycle:.2f} px/cycle, "
+      f"screen +/-{SCREEN_W_PX/px_per_deg/2:.1f} deg wide")
 # Calculate number of trials in each block
 trials_per_block = TOTAL_TRIALS/blocks
 print("Trials per block:", trials_per_block)
@@ -106,16 +144,13 @@ print("Trials per block:", trials_per_block)
 time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
 output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}_{time_str}")
 os.makedirs(output_folder, exist_ok=True)
-filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}") # file for psychopy task data
+filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_sf{SPATIAL_FREQUENCY:g}_Visit{exp_info['Visit']}") # file for psychopy task data
 edf_path = os.path.join(output_folder, f"{edf_filename}.EDF") # file for eyetracker data
 logFile = logging.LogFile(filename + '.log', level=logging.EXP)
 logging.console.setLevel(logging.WARNING)  # set logging level: warnings, errors, and critical messages will be displayed in output console
 
 # Window setup for EIZO monitor
-view_dist_cm = 60
-screen_w_cm = 51.84
-screen_w_px = 1920
-Eizo = monitors.Monitor('Eizo', width = screen_w_cm, distance = view_dist_cm)
+Eizo = monitors.Monitor('Eizo', width = SCREEN_W_CM, distance = view_dist_cm)
 Eizo.setSizePix([1920, 1200])
 win = visual.Window(fullscr=True, color=[0,0,0],
             size=Eizo.getSizePix(), screen=1,
@@ -132,7 +167,7 @@ scn_width, scn_height = win.size # in retina pixels
 # Calculate host PC pixel conversions
 host_x = int(scn_width//2)
 host_y = int(scn_height//2)
-px_per_cm = screen_w_px / screen_w_cm
+px_per_cm = SCREEN_W_PX / SCREEN_W_CM
 px_per_dva = px_per_cm * (2 * view_dist_cm * math.tan(math.radians(0.5)))
 
 # Save frame rate to data file
@@ -908,11 +943,12 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
     
     # Add trial data to the data file
     thisExp.addData('gabor.intensity', intensity)
+    thisExp.addData('gabor.sf', gabor.sf)
     thisExp.addData('gabor.pos', 'L' if trial['gabor_position'] == -1 else 'R')
     thisExp.addData('gabor.ori', gabor.ori)
     thisExp.addData('left_cue.opacity', left_cue.opacity)
     thisExp.addData('right_cue.opacity', right_cue.opacity)
-    thisExp.addData('condition', trial['cue_condition'])
+    thisExp.addData('cue_condition', trial['cue_condition'])
     thisExp.addData('keypress', key_name)
     thisExp.addData('accuracy', response)
     if key_name != None: 
