@@ -79,7 +79,7 @@ exp_info = {
     'SubID': '',
     'Visit': '',
     'Blocks': 'Ex. 4,6,8',
-    'Spatial frequency (c/deg)': ['-- select --', 2, 8]
+    'Spatial frequency (c/deg)': ['-- select --', 2, 8],
     'Viewing distance (cm)': '65'}
 
 allowed_char = ascii_letters + digits + '_'
@@ -108,6 +108,10 @@ while True:
         error_msg = 'Viewing distance must be a number'
         continue
 
+    if exp_info['Spatial frequency (c/deg)'] == '-- select --':
+        error_msg = 'Choose a spatial frequency'
+        continue
+
     SPATIAL_FREQUENCY = float(exp_info['Spatial frequency (c/deg)'])
 
     participant_id = exp_info['SubID']
@@ -130,9 +134,6 @@ while True:
         continue
     elif not 50 <= view_dist_cm <= 70:
         error_msg = 'Viewing distance must be 50-70 cm'
-        continue
-    elif exp_info['Spatial frequency (c/deg)'] == '-- select --':
-        error_msg = 'Choose a spatial frequency'
         continue
     elif px_per_cycle < MIN_PX_PER_CYCLE:
         error_msg = f'{SPATIAL_FREQUENCY:g} c/deg needs at least {min_dist:.0f} cm'
