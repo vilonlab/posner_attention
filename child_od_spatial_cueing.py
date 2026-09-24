@@ -87,7 +87,11 @@ error_msg = ''
 
 while True:
     title = exp_name if not error_msg else f'{exp_name} - {error_msg}'
-    dlg = gui.DlgFromDict(dictionary=exp_info, title=title)
+    dlg = gui.DlgFromDict(dictionary=exp_info, title=title,
+                          sortKeys=False,
+                          order=['SubID', 'Visit', 'Blocks',
+                                 'Spatial frequency (c/deg)',
+                                 'Viewing distance (cm)'])
     if dlg.OK == False:
         core.quit()
         sys.exit()
