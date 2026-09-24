@@ -142,7 +142,7 @@ print("Trials per block:", trials_per_block)
 
 # Establish data output directory
 time_str = time.strftime("_%m_%d_%Y_%H-%M", time.localtime())
-output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_{exp_name}_Visit{exp_info['Visit']}_{time_str}")
+output_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', f"{participant_id}_Visit{exp_info['Visit']}_{time_str}")
 os.makedirs(output_folder, exist_ok=True)
 filename = os.path.join(output_folder, f"{participant_id}_{exp_name}_sf{SPATIAL_FREQUENCY:g}_Visit{exp_info['Visit']}") # file for psychopy task data
 edf_path = os.path.join(output_folder, f"{edf_filename}.EDF") # file for eyetracker data
@@ -164,10 +164,13 @@ win = visual.Window(fullscr=True, color=[0,0,0],
 # Get the screen resolution used by PsychoPy
 scn_width, scn_height = win.size # in retina pixels
 
+if scn_width != SCREEN_W_PX:
+    print(f"WARNING: window is {scn_width} px, expected {SCREEN_W_PX}")
+
 # Calculate host PC pixel conversions
 host_x = int(scn_width//2)
 host_y = int(scn_height//2)
-px_per_cm = SCREEN_W_PX / SCREEN_W_CM
+px_per_cm = scn_width / SCREEN_W_CM
 px_per_dva = px_per_cm * (2 * view_dist_cm * math.tan(math.radians(0.5)))
 
 # Save frame rate to data file
