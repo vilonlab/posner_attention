@@ -603,7 +603,7 @@ def is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock):
     """ Check that gaze is within GAZE_BOUNDS. If there is no sample, wait loss_threshold seconds before returning False """
     while True:
         sample = el_tracker.getNewestSample()
-        if sample is None
+        if sample is None:
             if loss_clock.getTime() > LOSS_THRESHOLD:
                 print("Loss of sample for longer than 100ms.")
                 thisExp.addData('Loss clock', loss_clock)
@@ -868,7 +868,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
             if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
                 while tThisFlip < cue_onset - frameTolerance:
                     cue_onset = tThisFlip + ANDY_FIX_DUR
-                        if tThisFlip - FIX_CROSS_DUR > MAX_FIX_WAIT:
+                    if tThisFlip - FIX_CROSS_DUR > MAX_FIX_WAIT:
                         return abort_trial(trial_index, practice, block_num)
                 
         # Draw the left and right cues (onset and offset is same for both)
