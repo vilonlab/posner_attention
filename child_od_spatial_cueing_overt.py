@@ -866,7 +866,7 @@ def run_trial(trial, practice = False, practice_contrasts = None, block_num = No
         # Gaze contengent tracking during Andy Fixation, then trial proceeds
         if not EYETRACKER_OFF and andy_fix.status == STARTED:
             if not is_gaze_within_bounds(el_tracker, eye_used, sampleTimeList, loss_clock = loss_clock):
-                while tThisFlip < cue_onset - frameTolerance:
+                if tThisFlip < cue_onset - frameTolerance:
                     cue_onset = tThisFlip + ANDY_FIX_DUR
                     if tThisFlip - FIX_CROSS_DUR > MAX_FIX_WAIT:
                         return abort_trial(trial_index, practice, block_num)
